@@ -440,28 +440,43 @@ document.addEventListener('DOMContentLoaded', function() {
             const originalSvg = document.querySelector('svg');
             const clonedSvg = originalSvg.cloneNode(true);
 
-            // Always prioritize viewBox for screenshot dimensions if available
-            let svgWidth, svgHeight;
+            // --- Агрессивные сбросы стилей для изолированной генерации изображения ---
+            // Создаем временный контейнер для изолирования clonedSvg
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
+            tempContainer.style.height = '1000px';
+            tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
+            document.body.appendChild(tempContainer);
+            tempContainer.appendChild(clonedSvg);
 
-            // Always prioritize viewBox for screenshot dimensions if available
+            // Устанавливаем фиксированные размеры для clonedSvg, соответствующие viewBox
+            let svgWidth = 1600; // Из index.html
+            let svgHeight = 1000; // Из index.html
+
+            // Копируем viewBox с оригинального SVG, это критично для корректного отображения
             const viewBoxAttr = originalSvg.getAttribute('viewBox');
             if (viewBoxAttr) {
-                const viewBox = viewBoxAttr.split(' ').map(Number);
-                svgWidth = viewBox[2];
-                svgHeight = viewBox[3];
                 clonedSvg.setAttribute('viewBox', viewBoxAttr);
             } else {
-                // Fallback to explicit width/height attributes, or client dimensions if no viewBox
-                svgWidth = parseFloat(originalSvg.getAttribute('width')) || originalSvg.clientWidth;
-                svgHeight = parseFloat(originalSvg.getAttribute('height')) || originalSvg.clientHeight;
+                // Если viewBox отсутствует, пытаемся создать его из ширины/высоты
+                clonedSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
             }
-
-            // Ensure default values if still undefined (shouldn't happen with above logic if SVG is valid)
-            if (isNaN(svgWidth) || svgWidth === 0) svgWidth = 1600; // Default width from index.html
-            if (isNaN(svgHeight) || svgHeight === 0) svgHeight = 1000; // Default height from index.html
 
             clonedSvg.setAttribute('width', svgWidth);
             clonedSvg.setAttribute('height', svgHeight);
+
+            // Применяем агрессивные inline-стили к clonedSvg для полного сброса
+            clonedSvg.style.position = 'static';
+            clonedSvg.style.left = '0';
+            clonedSvg.style.top = '0';
+            clonedSvg.style.margin = '0';
+            clonedSvg.style.padding = '0';
+            clonedSvg.style.border = 'none';
+            clonedSvg.style.transform = 'none';
+            clonedSvg.style.overflow = 'visible';
 
             // Create a background rectangle and prepend it to the cloned SVG
             const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -506,14 +521,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
             }
 
-            // Attempt to override any clipping or transforms on the cloned SVG and its direct parent
-            clonedSvg.style.overflow = 'visible';
-            clonedSvg.style.transform = 'none';
-            if (clonedSvg.parentNode) {
-                clonedSvg.parentNode.style.overflow = 'visible';
-                clonedSvg.parentNode.style.transform = 'none';
-            }
-
             console.log('originalSvg outerHTML:', originalSvg.outerHTML);
             console.log('clonedSvg outerHTML before domtoimage:', clonedSvg.outerHTML);
             console.log('clonedSvg width:', clonedSvg.getAttribute('width'));
@@ -526,6 +533,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 width: svgWidth,
                 height: svgHeight,
             });
+
+            // Очищаем временный контейнер
+            document.body.removeChild(tempContainer);
 
             return dataUrl;
         } catch (error) {
