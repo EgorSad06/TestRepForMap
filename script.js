@@ -541,9 +541,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('clonedSvg height:', clonedSvg.getAttribute('height'));
             if (mapInnerClone) {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
+                mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
             }
 
-
+            await new Promise(resolve => setTimeout(resolve, 300));
             
             const dataUrl = await domtoimage.toPng(clonedSvg, {
                 width: svgWidth,
