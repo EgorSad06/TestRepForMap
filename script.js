@@ -444,8 +444,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Создаем временный контейнер для изолирования clonedSvg
             const tempContainer = document.createElement('div');
             tempContainer.style.position = 'absolute';
-            tempContainer.style.left = '-0'; // Скрываем от глаз пользователя
-            tempContainer.style.top = '-9999px';
+            tempContainer.style.left = '0'; // Скрываем от глаз пользователя
+            tempContainer.style.top = '0';
             tempContainer.style.width = '1600px'; // Original SVG width for container
             tempContainer.style.height = '1000px'; // Original SVG height for container
             tempContainer.style.backgroundColor = 'white'; // Ensure white background for the container
