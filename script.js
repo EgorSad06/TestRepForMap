@@ -436,359 +436,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            // Объявляем переменные в начале функции
-            let svgWidth = 1600; // Original SVG width
-            let svgHeight = 1000; // Original SVG height
-            let viewBoxX = 0;
-            let viewBoxY = 0;
-            let viewBoxWidth = svgWidth; // Use the fixed svgWidth/svgHeight as base
-            let viewBoxHeight = svgHeight;
-
             // Клонируем SVG, чтобы применить временные стили без изменения DOM
             const originalSvg = document.querySelector('svg');
             const clonedSvg = originalSvg.cloneNode(true);
-
-            // Встраиваем стили из styles.css напрямую в клонированный SVG
-            const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-            styleElement.textContent = `
-    .tooltip {
-    position: absolute;
-    background-color: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 0px 0px;
-    border-radius: 0px;
-    font-size: 0.9rem;
-    pointer-events: auto; 
-    z-index: 1000;
-    opacity: 0;
-    max-width: 250px;
-    transition: none;
-    }
-
-    .tooltip a {
-    color: #81c784;
-    text-decoration: underline;
-    display: block;
-    margin-top: 5px;
-    font-size: 0.85rem;
-    }
-
-    .reserve {
-    fill: #90caf9 ;
-    stroke: #47a7f5;
-    stroke-width: 1;
-    cursor: pointer;
-    transition: fill 0.2s;
-    }
-
-    .reserve.visited {
-    fill: #66bb6a;
-    }
-
-    .region.disabled {
-        pointer-events: none;
-        fill: #ccc !important;
-        cursor: not-allowed;
-    }
-    
-    :root {
-        --primary-color: #4CAF50;
-        --primary-light: #81C784;
-        --dark-gray: #333333;
-        --light-gray: #f5f5f5;
-        --white: #ffffff;
-        --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    }
-
-    body {
-        background-color: var(--light-gray);
-        color: var(--dark-gray);
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .header {
-        text-align: center;
-        padding: 15px;
-        background-color: var(--white);
-    
-        box-shadow: var(--shadow);
-        position: relative;
-    }
-
-    .header h1 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--dark-gray);
-    }
-
-    .map-container {
-        flex: 1;
-        position: relative;
-        overflow: hidden;
-        background-color: #e0e0e0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    #russia-map {
-        width: 90%;
-        max-width: 600px;
-        height: auto;
-    }
-
-    .region {
-        fill: #b0b0b0;
-        stroke: #ffffff;
-        stroke-width: 0.5;
-        transition: fill 0.3s ease;
-        cursor: pointer;
-    }
-
-    .region.visited {
-        fill: var(--primary-light);
-    }
-
-    .controls {
-        display: flex;
-        justify-content: space-around;
-        padding: 15px;
-        background-color: var(--white);
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .control-btn {
-        background: none;
-        border: none;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-        color: var(--dark-gray);
-        font-size: 0.8rem;
-        padding: 8px 12px;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-
-    .control-btn:hover {
-        background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .control-btn.active {
-        color: var(--primary-color);
-    }
-
-    .control-btn i {
-        font-size: 1.5rem;
-        margin-bottom: 5px;
-    }
-
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 100;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .modal-content {
-        background-color: var(--white);
-        border-radius: 12px;
-        width: 90%;
-        max-width: 400px;
-        padding: 20px;
-        box-shadow: var(--shadow);
-        animation: modalFadeIn 0.3s ease;
-    }
-
-    @keyframes modalFadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-
-    .modal-header h2 {
-        font-size: 1.2rem;
-        font-weight: 600;
-    }
-
-    .close-btn {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: var(--dark-gray);
-    }
-
-    .progress-bar {
-        width: 100%;
-        height: 10px;
-        background-color: #e0e0e0;
-        border-radius: 5px;
-        margin: 15px 0;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background-color: var(--primary-color);
-        border-radius: 5px;
-        transition: width 0.5s ease;
-    }
-
-    .progress-text {
-        text-align: center;
-        font-size: 1rem;
-        margin-bottom: 10px;
-    }
-
-    .info-text {
-        line-height: 1.5;
-        margin-bottom: 15px;
-    }
-
-    .layer-selector {
-        display: flex;
-        flex-direction: column; /* Изменено с row на column */
-        justify-content: space-around;
-        margin: 15px 0;
-    }
-
-    .layer-btn {
-        padding: 8px 15px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: var(--white);
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .layer-btn.active {
-        background-color: var(--primary-color);
-        color: var(--white);
-        border-color: var(--primary-color);
-    }
-
-    .tooltip {
-        position: absolute;
-        background-color: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 0.9rem;
-        pointer-events: none;
-        z-index: 10;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .poi {
-        cursor: pointer;
-        pointer-events: visiblePainted; /* важно для SVG */
-        fill: #ffb74d;   /* базовый цвет точки (если не задан в атрибуте) */
-        stroke: #d84315;
-        stroke-width: 1;
-        transition: transform 0.15s, fill 0.15s;
-    }
-
-    .poi:hover {
-        fill: #ff8a50;
-    }
-
-    .poi.visited {
-        fill: #4caf50;
-        stroke: #2e7d32;
-    }
-
-    /* Стили для панели подтверждения */
-    .confirmation-panel {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: var(--white);
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        transform: translateY(100%); /* Скрываем по умолчанию */
-        transition: transform 0.3s ease-out;
-        z-index: 110;
-    }
-
-    .confirmation-panel.visible {
-        transform: translateY(0%); /* Показываем панель */
-    }
-
-    .confirmation-panel .panel-content {
-        text-align: center;
-        width: 100%;
-    }
-
-    .confirmation-panel p {
-        margin-bottom: 15px;
-        font-size: 1.1rem;
-        font-weight: 500;
-    }
-
-    .confirmation-panel button {
-        background-color: var(--primary-color);
-        color: var(--white);
-        border: none;
-        padding: 12px 25px;
-        border-radius: 8px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        width: 100%;
-        max-width: 250px;
-    }
-
-    .confirmation-panel button:hover {
-        background-color: #388e3c;
-    }
-
-    @media (min-width: 600px) {
-        .confirmation-panel {
-            width: 350px; /* Шире для десктопа */
-            left: 50%;
-            transform: translateX(-50%) translateY(100%);
-        }
-
-        .confirmation-panel.visible {
-            transform: translateX(-50%) translateY(0%);
-        }
-    }
-            `;
-            clonedSvg.prepend(styleElement);
 
             // --- Агрессивные сбросы стилей для изолированной генерации изображения ---
             // Создаем временный контейнер для изолирования clonedSvg
@@ -796,15 +446,22 @@ document.addEventListener('DOMContentLoaded', function() {
             tempContainer.style.position = 'absolute';
             tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
             tempContainer.style.top = '-9999px';
-            tempContainer.style.width = `${svgWidth}px`; // Original SVG width for container
-            tempContainer.style.height = `${svgHeight}px`; // Original SVG height for container
-            tempContainer.style.backgroundColor = 'white'; // Ensure white background for the container
-            tempContainer.style.overflow = 'hidden'; // Reintroduce overflow:hidden for precise clipping
+            tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
+            tempContainer.style.height = '1000px';
+            tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
             document.body.appendChild(tempContainer);
             tempContainer.appendChild(clonedSvg);
 
+            // Устанавливаем фиксированные размеры для clonedSvg, соответствующие viewBox
+            let svgWidth = 1300; // Из index.html
+            let svgHeight = 1000; // Из index.html
+
             // Копируем viewBox с оригинального SVG, это критично для корректного отображения
             const viewBoxAttr = originalSvg.getAttribute('viewBox');
+            let viewBoxX = 0;
+            let viewBoxY = 0;
+            let viewBoxWidth = svgWidth; // Use the fixed svgWidth/svgHeight as base
+            let viewBoxHeight = svgHeight;
 
             if (viewBoxAttr) {
                 const originalViewBox = viewBoxAttr.split(' ').map(Number);
@@ -815,34 +472,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Adjust viewBox to remove 300 pixels from the left
-            const cropLeft = 300; // Corrected to remove 300 pixels from the left
+            const cropLeft = 0;
             viewBoxX += cropLeft;
             viewBoxWidth -= cropLeft;
 
             // Apply the adjusted viewBox to the cloned SVG
-            clonedSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`); // Restore viewBox to full original size
+            clonedSvg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
 
-            // Set the cloned SVG's dimensions to its original size for rendering within the tempContainer
-            clonedSvg.setAttribute('width', svgWidth);
+            clonedSvg.setAttribute('width', svgWidth); // Keep clonedSvg's rendered width fixed for domtoimage
             clonedSvg.setAttribute('height', svgHeight);
 
             // Применяем агрессивные inline-стили к clonedSvg для полного сброса
-            clonedSvg.style.position = 'absolute'; // Change to absolute for positioning within tempContainer
-            clonedSvg.style.left = `0px`; // Shift SVG to align cropped area
-            clonedSvg.style.top = `0px`; // Shift SVG to align cropped area
+            clonedSvg.style.position = 'static';
+            clonedSvg.style.left = '0';
+            clonedSvg.style.top = '0';
             clonedSvg.style.margin = '0';
             clonedSvg.style.padding = '0';
             clonedSvg.style.border = 'none';
             clonedSvg.style.transform = 'none';
             clonedSvg.style.overflow = 'visible';
-            clonedSvg.style.backgroundColor = 'transparent'; // Ensure no background on the SVG itself
 
             // Create a background rectangle and prepend it to the cloned SVG
             const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            backgroundRect.setAttribute('x', 0); // Position at viewBoxX
-            backgroundRect.setAttribute('y', 0); // Position at viewBoxY
-            backgroundRect.setAttribute('width', svgWidth); // Use viewBoxWidth
-            backgroundRect.setAttribute('height', svgHeight); // Use viewBoxHeight
+            backgroundRect.setAttribute('width', svgWidth);
+            backgroundRect.setAttribute('height', svgHeight);
             backgroundRect.setAttribute('fill', 'white');
             clonedSvg.prepend(backgroundRect);
 
@@ -879,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const mapInnerClone = clonedSvg.querySelector('#map-inner');
             if (mapInnerClone) {
                 // Reset the transform to ensure the screenshot is taken from a fixed (0,0) point at scale 1
-                mapInnerClone.setAttribute('transform', `translate(${-viewBoxX}, ${-viewBoxY}) scale(1)`);
+                mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
             }
 
             console.log('originalSvg outerHTML:', originalSvg.outerHTML);
@@ -890,37 +543,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
-            const fullImageBase64 = await domtoimage.toPng(tempContainer, { bgcolor: 'white' });
-            console.log('Full image generated by domtoimage (base64):', fullImageBase64 ? fullImageBase64.substring(0, 100) + '...' : 'null');
-
-            // Step 2: Crop the image using a Canvas
-            const croppedCanvas = document.createElement('canvas');
-            croppedCanvas.width = viewBoxWidth;
-            croppedCanvas.height = viewBoxHeight;
-            const ctx = croppedCanvas.getContext('2d');
-
-            const img = new Image();
-            img.src = fullImageBase64;
-            console.log('Image src for canvas:', img.src ? img.src.substring(0, 100) + '...' : 'null');
-
-            await new Promise(resolve => {
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0, viewBoxWidth, viewBoxHeight, 0, 0, viewBoxWidth, viewBoxHeight); // Crop from 0,0 of the image
-                    resolve();
-                };
-                img.onerror = (e) => {
-                    console.error('Error loading image for cropping:', e);
-                    resolve(); // Resolve anyway to avoid hanging
-                };
+            const dataUrl = await domtoimage.toPng(clonedSvg, {
+                width: svgWidth,
+                height: svgHeight,
             });
-
-            const croppedDataUrl = croppedCanvas.toDataURL('image/png');
-            console.log('Cropped image data URL (base64):', croppedDataUrl ? croppedDataUrl.substring(0, 100) + '...' : 'null');
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
 
-            return croppedDataUrl;
+            return dataUrl;
         } catch (error) {
             console.error('Ошибка при генерации изображения карты:', error);
             return null;
