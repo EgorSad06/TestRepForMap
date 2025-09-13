@@ -448,6 +448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tempContainer.style.top = '-9999px';
             tempContainer.style.width = `${viewBoxWidth}px`; // Adjust width to cropped size
             tempContainer.style.height = `${viewBoxHeight}px`; // Adjust height to cropped size
+            tempContainer.style.backgroundColor = 'white'; // Ensure white background for the container
             // tempContainer.style.overflow = 'hidden'; // Removed to avoid black background
             document.body.appendChild(tempContainer);
             tempContainer.appendChild(clonedSvg);
@@ -491,13 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clonedSvg.style.border = 'none';
             clonedSvg.style.transform = 'none';
             clonedSvg.style.overflow = 'visible';
-
-            // Create a background rectangle and prepend it to the cloned SVG
-            const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            backgroundRect.setAttribute('width', svgWidth);
-            backgroundRect.setAttribute('height', svgHeight);
-            backgroundRect.setAttribute('fill', 'white');
-            clonedSvg.prepend(backgroundRect);
+            clonedSvg.style.backgroundColor = 'transparent'; // Ensure no background on the SVG itself
 
             // NEW: Копируем вычисленные стили для регионов, заповедников и достопримечательностей
             const elementsToStyle = ['.region', '.reserve', '.attraction', '.poi'];
@@ -543,7 +538,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
-            const dataUrl = await domtoimage.toPng(clonedSvg); // Removed width/height options
+            const dataUrl = await domtoimage.toPng(clonedSvg, {
+                bgcolor: 'white' // Explicitly set background color to white
+            });
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
