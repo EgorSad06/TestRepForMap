@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Adjust viewBox to remove 300 pixels from the left
-            const cropLeft = 300; // Reverted to original crop amount
+            const cropLeft = -300; // Reverted to original crop amount
             viewBoxX += cropLeft;
             viewBoxWidth -= cropLeft;
 
