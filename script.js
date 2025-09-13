@@ -543,10 +543,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
+
+            async function captureMap() {
+                const mapElement = document.querySelector('.map-container');
+                await new Promise(r => setTimeout(r, 300)); // Ждём 300мс, чтобы стили точно успели примениться
             const dataUrl = await domtoimage.toPng(clonedSvg, {
                 width: svgWidth,
                 height: svgHeight,
             });
+            }
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
