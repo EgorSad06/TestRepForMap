@@ -446,10 +446,9 @@ document.addEventListener('DOMContentLoaded', function() {
             tempContainer.style.position = 'absolute';
             tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
             tempContainer.style.top = '-9999px';
-            tempContainer.style.width = `${viewBoxWidth}px`; // Adjust width to cropped size
-            tempContainer.style.height = `${viewBoxHeight}px`; // Adjust height to cropped size
-            tempContainer.style.backgroundColor = 'white'; // Ensure white background for the container
-            // tempContainer.style.overflow = 'hidden'; // Removed to avoid black background
+            tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
+            tempContainer.style.height = '1000px';
+            tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
             document.body.appendChild(tempContainer);
             tempContainer.appendChild(clonedSvg);
 
@@ -473,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Adjust viewBox to remove 300 pixels from the left
-            const cropLeft = 800; // Increased crop amount to remove more empty space from the left
+            const cropLeft = -300; // Reverted to original crop amount
             viewBoxX += cropLeft;
             viewBoxWidth -= cropLeft;
 
@@ -484,22 +483,19 @@ document.addEventListener('DOMContentLoaded', function() {
             clonedSvg.setAttribute('height', svgHeight);
 
             // Применяем агрессивные inline-стили к clonedSvg для полного сброса
-            clonedSvg.style.position = 'absolute'; // Change to absolute for positioning within tempContainer
-            clonedSvg.style.left = `-${viewBoxX}px`; // Shift SVG to align cropped area
-            clonedSvg.style.top = `-${viewBoxY}px`; // Shift SVG to align cropped area
+            clonedSvg.style.position = 'static';
+            clonedSvg.style.left = '0';
+            clonedSvg.style.top = '0';
             clonedSvg.style.margin = '0';
             clonedSvg.style.padding = '0';
             clonedSvg.style.border = 'none';
             clonedSvg.style.transform = 'none';
             clonedSvg.style.overflow = 'visible';
-            clonedSvg.style.backgroundColor = 'transparent'; // Ensure no background on the SVG itself
 
             // Create a background rectangle and prepend it to the cloned SVG
             const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            backgroundRect.setAttribute('width', viewBoxWidth); // Use viewBoxWidth
-            backgroundRect.setAttribute('height', viewBoxHeight); // Use viewBoxHeight
-            backgroundRect.setAttribute('x', viewBoxX); // Position at viewBoxX
-            backgroundRect.setAttribute('y', viewBoxY); // Position at viewBoxY
+            backgroundRect.setAttribute('width', svgWidth);
+            backgroundRect.setAttribute('height', svgHeight);
             backgroundRect.setAttribute('fill', 'white');
             clonedSvg.prepend(backgroundRect);
 
@@ -547,7 +543,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
-            const dataUrl = await domtoimage.toPng(clonedSvg); // Removed bgcolor option
+            const dataUrl = await domtoimage.toPng(clonedSvg, {
+                width: svgWidth,
+                height: svgHeight,
+            });
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
