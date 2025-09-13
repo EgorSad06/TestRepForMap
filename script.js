@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', function() {
             tempContainer.appendChild(clonedSvg);
 
             // Устанавливаем фиксированные размеры для clonedSvg, соответствующие viewBox
-            let svgWidth = 1300; // Из index.html
+            let svgWidth = 1600; // Из index.html
             let svgHeight = 1000; // Из index.html
 
             // Копируем viewBox с оригинального SVG, это критично для корректного отображения
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Adjust viewBox to remove 300 pixels from the left
-            const cropLeft = -300; // Reverted to original crop amount
+            const cropLeft = 800; // Increased crop amount to remove more empty space from the left
             viewBoxX += cropLeft;
             viewBoxWidth -= cropLeft;
 
