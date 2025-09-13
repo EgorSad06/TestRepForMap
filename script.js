@@ -494,6 +494,15 @@ document.addEventListener('DOMContentLoaded', function() {
             clonedSvg.style.overflow = 'visible';
             clonedSvg.style.backgroundColor = 'transparent'; // Ensure no background on the SVG itself
 
+            // Create a background rectangle and prepend it to the cloned SVG
+            const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            backgroundRect.setAttribute('width', viewBoxWidth); // Use viewBoxWidth
+            backgroundRect.setAttribute('height', viewBoxHeight); // Use viewBoxHeight
+            backgroundRect.setAttribute('x', viewBoxX); // Position at viewBoxX
+            backgroundRect.setAttribute('y', viewBoxY); // Position at viewBoxY
+            backgroundRect.setAttribute('fill', 'white');
+            clonedSvg.prepend(backgroundRect);
+
             // NEW: Копируем вычисленные стили для регионов, заповедников и достопримечательностей
             const elementsToStyle = ['.region', '.reserve', '.attraction', '.poi'];
             elementsToStyle.forEach(selector => {
@@ -538,9 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
-            const dataUrl = await domtoimage.toPng(clonedSvg, {
-                bgcolor: 'white' // Explicitly set background color to white
-            });
+            const dataUrl = await domtoimage.toPng(clonedSvg); // Removed bgcolor option
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
