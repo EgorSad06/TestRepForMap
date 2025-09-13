@@ -458,14 +458,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Копируем viewBox с оригинального SVG, это критично для корректного отображения
             const viewBoxAttr = originalSvg.getAttribute('viewBox');
+            let viewBoxX = 0;
+            let viewBoxY = 0;
+            let viewBoxWidth = svgWidth; // Use the fixed svgWidth/svgHeight as base
+            let viewBoxHeight = svgHeight;
+
             if (viewBoxAttr) {
-                clonedSvg.setAttribute('viewBox', viewBoxAttr);
-            } else {
-                // Если viewBox отсутствует, пытаемся создать его из ширины/высоты
-                clonedSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+                const originalViewBox = viewBoxAttr.split(' ').map(Number);
+                viewBoxX = originalViewBox[0];
+                viewBoxY = originalViewBox[1];
+                viewBoxWidth = originalViewBox[2];
+                viewBoxHeight = originalViewBox[3];
             }
 
-            clonedSvg.setAttribute('width', svgWidth);
+            // Adjust viewBox to remove 300 pixels from the left
+            const cropLeft = 300;
+            viewBoxX += cropLeft;
+            viewBoxWidth -= cropLeft;
+
+            // Apply the adjusted viewBox to the cloned SVG
+            clonedSvg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+
+            clonedSvg.setAttribute('width', svgWidth); // Keep clonedSvg's rendered width fixed for domtoimage
             clonedSvg.setAttribute('height', svgHeight);
 
             // Применяем агрессивные inline-стили к clonedSvg для полного сброса
