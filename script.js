@@ -446,10 +446,10 @@ document.addEventListener('DOMContentLoaded', function() {
             tempContainer.style.position = 'absolute';
             tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
             tempContainer.style.top = '-9999px';
-            tempContainer.style.width = '1600px'; // Original SVG width
-            tempContainer.style.height = '1000px'; // Original SVG height
+            tempContainer.style.width = `${viewBoxWidth}px`; // Adjust width to cropped size
+            tempContainer.style.height = `${viewBoxHeight}px`; // Adjust height to cropped size
             tempContainer.style.backgroundColor = 'white'; // Ensure white background for the container
-            tempContainer.style.overflow = 'hidden'; // Reintroduce overflow:hidden for precise clipping
+            tempContainer.style.overflow = 'visible'; // Crucial to prevent clipping and black borders
             document.body.appendChild(tempContainer);
             tempContainer.appendChild(clonedSvg);
 
@@ -480,14 +480,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Apply the adjusted viewBox to the cloned SVG
             clonedSvg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
 
-            // Set the cloned SVG's dimensions to its original size for rendering within the tempContainer
+            // Set the full original dimensions for the cloned SVG itself, then position it
             clonedSvg.setAttribute('width', svgWidth);
             clonedSvg.setAttribute('height', svgHeight);
 
             // Применяем агрессивные inline-стили к clonedSvg для полного сброса
-            clonedSvg.style.position = 'absolute'; // Position within tempContainer
-            clonedSvg.style.left = '0'; // Position at 0,0 within tempContainer
-            clonedSvg.style.top = '0'; // Position at 0,0 within tempContainer
+            clonedSvg.style.position = 'absolute'; // Change to absolute for positioning within tempContainer
+            clonedSvg.style.left = `-${viewBoxX}px`; // Shift SVG to align cropped area
+            clonedSvg.style.top = `-${viewBoxY}px`; // Shift SVG to align cropped area
             clonedSvg.style.margin = '0';
             clonedSvg.style.padding = '0';
             clonedSvg.style.border = 'none';
@@ -497,10 +497,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Create a background rectangle and prepend it to the cloned SVG
             const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            backgroundRect.setAttribute('x', viewBoxX); // Position at viewBoxX to cover cropped area
-            backgroundRect.setAttribute('y', viewBoxY); // Position at viewBoxY to cover cropped area
-            backgroundRect.setAttribute('width', viewBoxWidth); // Cover the cropped area
-            backgroundRect.setAttribute('height', viewBoxHeight); // Cover the cropped area
+            backgroundRect.setAttribute('x', viewBoxX); // Position at viewBoxX
+            backgroundRect.setAttribute('y', viewBoxY); // Position at viewBoxY
+            backgroundRect.setAttribute('width', viewBoxWidth); // Use viewBoxWidth
+            backgroundRect.setAttribute('height', viewBoxHeight); // Use viewBoxHeight
             backgroundRect.setAttribute('fill', 'white');
             clonedSvg.prepend(backgroundRect);
 
@@ -548,12 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
-            const dataUrl = await domtoimage.toPng(tempContainer, {
-                x: viewBoxX,
-                y: viewBoxY,
-                width: viewBoxWidth,
-                height: viewBoxHeight
-            }); // Capture tempContainer with cropped dimensions
+            const dataUrl = await domtoimage.toPng(clonedSvg, { width: viewBoxWidth, height: viewBoxHeight }); // Pass viewBoxWidth and viewBoxHeight
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
