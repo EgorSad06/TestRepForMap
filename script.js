@@ -440,32 +440,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const originalSvg = document.querySelector('svg');
             const clonedSvg = originalSvg.cloneNode(true);
 
-            // Use explicit width/height attributes from originalSvg if available, otherwise fallback to client dimensions.
-            let svgWidth = parseFloat(originalSvg.getAttribute('width'));
-            let svgHeight = parseFloat(originalSvg.getAttribute('height'));
+            // Always prioritize viewBox for screenshot dimensions if available
+            let svgWidth, svgHeight;
 
-            // If width/height attributes are not explicitly set, try to use viewBox dimensions.
+            // Always prioritize viewBox for screenshot dimensions if available
             const viewBoxAttr = originalSvg.getAttribute('viewBox');
             if (viewBoxAttr) {
                 const viewBox = viewBoxAttr.split(' ').map(Number);
-                if (isNaN(svgWidth) && viewBox[2]) {
-                    svgWidth = viewBox[2];
-                }
-                if (isNaN(svgHeight) && viewBox[3]) {
-                    svgHeight = viewBox[3];
-                }
+                svgWidth = viewBox[2];
+                svgHeight = viewBox[3];
                 clonedSvg.setAttribute('viewBox', viewBoxAttr);
+            } else {
+                // Fallback to explicit width/height attributes, or client dimensions if no viewBox
+                svgWidth = parseFloat(originalSvg.getAttribute('width')) || originalSvg.clientWidth;
+                svgHeight = parseFloat(originalSvg.getAttribute('height')) || originalSvg.clientHeight;
             }
 
-            // Fallback to client dimensions if neither explicit attributes nor viewBox provide dimensions.
-            if (isNaN(svgWidth)) {
-                svgWidth = originalSvg.clientWidth;
-            }
-            if (isNaN(svgHeight)) {
-                svgHeight = originalSvg.clientHeight;
-            }
-
-            // svgWidth = Math.max(100, svgWidth - 350); // This line was commented out previously
+            // Ensure default values if still undefined (shouldn't happen with above logic if SVG is valid)
+            if (isNaN(svgWidth) || svgWidth === 0) svgWidth = 1600; // Default width from index.html
+            if (isNaN(svgHeight) || svgHeight === 0) svgHeight = 1000; // Default height from index.html
 
             clonedSvg.setAttribute('width', svgWidth);
             clonedSvg.setAttribute('height', svgHeight);
@@ -509,8 +502,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure mapInner is defined and accessible (it's a global variable)
             const mapInnerClone = clonedSvg.querySelector('#map-inner');
             if (mapInnerClone) {
-                // Use the global scale, currentX, currentY from the live map state
-                mapInnerClone.setAttribute('transform', `translate(${currentX}, ${currentY}) scale(${scale})`);
+                // Reset the transform to ensure the screenshot is taken from a fixed (0,0) point at scale 1
+                mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
+            }
+
+            // Attempt to override any clipping or transforms on the cloned SVG and its direct parent
+            clonedSvg.style.overflow = 'visible';
+            clonedSvg.style.transform = 'none';
+            if (clonedSvg.parentNode) {
+                clonedSvg.parentNode.style.overflow = 'visible';
+                clonedSvg.parentNode.style.transform = 'none';
             }
 
             console.log('originalSvg outerHTML:', originalSvg.outerHTML);
