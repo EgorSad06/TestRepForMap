@@ -443,9 +443,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // --- Агрессивные сбросы стилей для изолированной генерации изображения ---
             // Создаем временный контейнер для изолирования clonedSvg
             const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'absolute';
-            tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
-            tempContainer.style.top = '-9999px';
+            tempContainer.style.position = 'fixed';
+            tempContainer.style.left = '0px'; // Скрываем от глаз пользователя
+            tempContainer.style.top = '0px';
             tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
             tempContainer.style.height = '1000px';
             tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
