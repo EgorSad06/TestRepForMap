@@ -478,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
             viewBoxWidth -= cropLeft;
 
             // Remove viewBox from clonedSvg, as we'll handle cropping with canvas
-            clonedSvg.removeAttribute('viewBox');
+            clonedSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`); // Restore viewBox to full original size
 
             // Set the cloned SVG's dimensions to its original size for rendering within the tempContainer
             clonedSvg.setAttribute('width', svgWidth);
