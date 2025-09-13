@@ -536,8 +536,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure mapInner is defined and accessible (it's a global variable)
             const mapInnerClone = clonedSvg.querySelector('#map-inner');
             if (mapInnerClone) {
-                // Remove any transform to ensure the screenshot is taken from a fixed (0,0) point at scale 1
-                mapInnerClone.removeAttribute('transform'); // Remove the transform attribute
+                // Reset the transform and apply the inverse of the cropping offset
+                mapInnerClone.setAttribute('transform', `translate(${-viewBoxX}, ${-viewBoxY}) scale(1)`);
             }
 
             console.log('originalSvg outerHTML:', originalSvg.outerHTML);
@@ -564,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             await new Promise(resolve => {
                 img.onload = () => {
-                    ctx.drawImage(img, viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight, 0, 0, viewBoxWidth, viewBoxHeight);
+                    ctx.drawImage(img, 0, 0, viewBoxWidth, viewBoxHeight, 0, 0, viewBoxWidth, viewBoxHeight); // Crop from 0,0 of the image
                     resolve();
                 };
                 img.onerror = (e) => {
