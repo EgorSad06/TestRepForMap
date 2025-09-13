@@ -555,8 +555,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         shareText += `Присоединяйтесь и исследуйте!\n`; // Removed the URL from here
-        shareText += `Наш телеграм канал: https://t.me/BeenInRussia\n`;
-        shareText += `Отметить свои достижения: http://beeninrussia.ru/`;
+        shareText += `Наш телеграм канал:\nhttps://t.me/BeenInRussia\n`;
+        shareText += `Отметить свои достижения:\nhttp://beeninrussia.ru/`; // Removed the URL from here
 
         const mapImage = await generateMapImage(); // Генерируем изображение карты
 
@@ -565,17 +565,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const shareData = {
                     title: 'Мои путешествия по России',
                     text: shareText,
-                    url: 'http://beeninrussia.ru/',
                     files: mapImage ? [new File([await fetch(mapImage).then(res => res.blob())], 'map.png', { type: 'image/png' })] : []
                 };
                 console.log('Sharing data:', shareData);
                 await navigator.share(shareData);
             } catch (error) {
                 console.error('Error sharing:', error);
-                alert('Чтобы поделиться, скопируйте текст: ' + shareText + ' http://beeninrussia.ru/');
+                alert('Чтобы поделиться, скопируйте текст: ' + shareText);
             }
         } else {
-            alert('Чтобы поделиться, скопируйте текст: ' + shareText + ' http://beeninrussia.ru/');
+            alert('Чтобы поделиться, скопируйте текст: ' + shareText);
         }
     }
 
