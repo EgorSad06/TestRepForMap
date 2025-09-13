@@ -536,8 +536,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure mapInner is defined and accessible (it's a global variable)
             const mapInnerClone = clonedSvg.querySelector('#map-inner');
             if (mapInnerClone) {
-                // Reset the transform and apply the inverse of the cropping offset
-                mapInnerClone.setAttribute('transform', `translate(${-viewBoxX}, ${-viewBoxY}) scale(1)`);
+                // Remove any transform to ensure the screenshot is taken from a fixed (0,0) point at scale 1
+                mapInnerClone.removeAttribute('transform'); // Remove the transform attribute
             }
 
             console.log('originalSvg outerHTML:', originalSvg.outerHTML);
