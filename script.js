@@ -446,9 +446,9 @@ document.addEventListener('DOMContentLoaded', function() {
             tempContainer.style.position = 'absolute';
             tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
             tempContainer.style.top = '-9999px';
-            tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
-            tempContainer.style.height = '1000px';
-            tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
+            tempContainer.style.width = `${viewBoxWidth}px`; // Adjust width to cropped size
+            tempContainer.style.height = `${viewBoxHeight}px`; // Adjust height to cropped size
+            // tempContainer.style.overflow = 'hidden'; // Removed to avoid black background
             document.body.appendChild(tempContainer);
             tempContainer.appendChild(clonedSvg);
 
@@ -483,9 +483,9 @@ document.addEventListener('DOMContentLoaded', function() {
             clonedSvg.setAttribute('height', svgHeight);
 
             // Применяем агрессивные inline-стили к clonedSvg для полного сброса
-            clonedSvg.style.position = 'static';
-            clonedSvg.style.left = '0';
-            clonedSvg.style.top = '0';
+            clonedSvg.style.position = 'absolute'; // Change to absolute for positioning within tempContainer
+            clonedSvg.style.left = `-${viewBoxX}px`; // Shift SVG to align cropped area
+            clonedSvg.style.top = `-${viewBoxY}px`; // Shift SVG to align cropped area
             clonedSvg.style.margin = '0';
             clonedSvg.style.padding = '0';
             clonedSvg.style.border = 'none';
@@ -543,10 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
             }
 
-            const dataUrl = await domtoimage.toPng(clonedSvg, {
-                width: svgWidth,
-                height: svgHeight,
-            });
+            const dataUrl = await domtoimage.toPng(clonedSvg); // Removed width/height options
 
             // Очищаем временный контейнер
             document.body.removeChild(tempContainer);
