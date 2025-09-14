@@ -579,41 +579,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function generateMapImageIOS() {
-    try {
-        const originalSvg = document.querySelector('svg');
-        if (!originalSvg) {
-            console.error('generateMapImageIOS: SVG not found');
-            return null;
-        }
+        try {
+            const originalSvg = document.querySelector('svg');
+            if (!originalSvg) {
+                console.error('generateMapImageIOS: SVG not found');
+                return null;
+            }
+            const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            bgRect.setAttribute('width', svgWidth);
+            bgRect.setAttribute('height', svgHeight);
+            bgRect.setAttribute('fill', 'white');
+            clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
+    
+    
+            // ✅ БЕРЁМ "идеальные" размеры как в generateMapImageDefault
+            const svgWidth = 1300;
+            const svgHeight = 1000;
+    
+            // ✅ Принудительно ставим viewBox, если его нет
+            const vb = originalSvg.getAttribute('viewBox') || `0 0 ${svgWidth} ${svgHeight}`;
+    
+            console.log('generateMapImageIOS: using fixed size', svgWidth, 'x', svgHeight, 'viewBox', vb);
+    
+            const clonedSvg = originalSvg.cloneNode(true);
+            clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+            clonedSvg.setAttribute('width', svgWidth);
+            clonedSvg.setAttribute('height', svgHeight);
+            clonedSvg.setAttribute('viewBox', vb);
+            clonedSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
         // Определяем целевой размер: предпочитаем viewBox, иначе bbox
-        let svgWidth = 1300, svgHeight = 1000;
-        const vb = originalSvg.getAttribute('viewBox');
-        if (vb) {
-            const parts = vb.trim().split(/\s+|,/).map(Number);
-            if (parts.length >= 4 && parts[2] > 0 && parts[3] > 0) {
-                svgWidth = parts[2];
-                svgHeight = parts[3];
-            }
-        } else {
-            const rect = originalSvg.getBoundingClientRect();
-            if (rect.width && rect.height) {
-                svgWidth = Math.round(rect.width);
-                svgHeight = Math.round(rect.height);
-            }
-        }
 
         console.log('generateMapImageIOS: target size', svgWidth, 'x', svgHeight);
 
-        // Клонируем SVG и добавляем xmlns
-        const clonedSvg = originalSvg.cloneNode(true);
-        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-        clonedSvg.setAttribute('width', svgWidth);
-        clonedSvg.setAttribute('height', svgHeight);
-        if (!clonedSvg.getAttribute('viewBox') && vb) {
-            clonedSvg.setAttribute('viewBox', vb);
-        }
 
         // Пробуем инлайнить computed styles: проходим по узлам оригинала и клона параллельно
         const origNodes = originalSvg.querySelectorAll('*');
@@ -661,12 +660,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Добавляем белый фон (важно для Safari)
-        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bgRect.setAttribute('width', svgWidth);
-        bgRect.setAttribute('height', svgHeight);
-        bgRect.setAttribute('fill', 'white');
-        clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
-
+       
         // Сериализуем
         const svgString = new XMLSerializer().serializeToString(clonedSvg);
 
