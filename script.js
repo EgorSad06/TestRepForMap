@@ -639,49 +639,74 @@ document.addEventListener('DOMContentLoaded', function() {
     
 
     // Функция для обработки кнопки "Поделиться"
-    async function shareResults() {
-        const regionPercentage = getVisitedRegionsPercentage();
-        const visitedRegionsCount = visitedRegions.length;
-        const totalRegionsCount = regions.length;
-        let shareText = 'Мои достижения на карте России:\n';
-        shareText += `Вы посетили регионов - ${visitedRegionsCount}. Это ${regionPercentage}% от всей страны!\n`;
-        if (regionPercentage > 0) {
-            shareText += `- Регионы: ${regionPercentage}%\n`;
+  // Функция для обработки кнопки "Поделиться"
+async function shareResults() {
+    const regionPercentage = getVisitedRegionsPercentage();
+    const visitedRegionsCount = visitedRegions.length;
+
+    let shareText = 'Мои достижения на карте России:\n';
+    shareText += `Вы посетили регионов - ${visitedRegionsCount}. Это ${regionPercentage}% от всей страны!\n`;
+
+    const reservePercentage = getVisitedReservesPercentage();
+    if (reservePercentage > 0) shareText += `- Заповедники: ${reservePercentage}%\n`;
+
+    const attractionPercentage = getVisitedAttractionsPercentage();
+    if (attractionPercentage > 0) shareText += `- Достопримечательности: ${attractionPercentage}%\n`;
+
+    shareText += `Присоединяйтесь и исследуйте!\n`;
+    shareText += `Наш телеграм канал:\nhttps://t.me/BeenInRussia\n`;
+    shareText += `Отметить свои достижения:\nhttp://beeninrussia.ru/`;
+
+    // Генерация картинки
+    const mapImage = await generateMapImage();
+
+    // Определяем iOS
+    const isIOS = /iP(hone|od|ad)/.test(navigator.platform);
+
+    if (isIOS) {
+        // --- iOS: Открываем картинку в новой вкладке, шэрим только текст ---
+        if (mapImage) {
+            const imgWindow = window.open();
+            imgWindow.document.write(`<title>Карта моих путешествий</title><img src="${mapImage}" style="width:100%">`);
         }
-
-        const reservePercentage = getVisitedReservesPercentage();
-        if (reservePercentage > 0) {
-            shareText += `- Заповедники: ${reservePercentage}%\n`;
-        }
-
-        const attractionPercentage = getVisitedAttractionsPercentage();
-        if (attractionPercentage > 0) {
-            shareText += `- Достопримечательности: ${attractionPercentage}%\n`;
-        }
-
-        shareText += `Присоединяйтесь и исследуйте!\n`; // Removed the URL from here
-        shareText += `Наш телеграм канал:\nhttps://t.me/BeenInRussia\n`;
-        shareText += `Отметить свои достижения:\nhttp://beeninrussia.ru/`; // Removed the URL from here
-
-        const mapImage = await generateMapImage(); // Генерируем изображение карты
 
         if (navigator.share) {
             try {
-                const shareData = {
+                await navigator.share({
                     title: 'Мои путешествия по России',
-                    text: shareText,
-                    files: mapImage ? [new File([await fetch(mapImage).then(res => res.blob())], 'map.png', { type: 'image/png' })] : []
-                };
-                console.log('Sharing data:', shareData);
-                await navigator.share(shareData);
+                    text: shareText
+                    // 👆 без files — Safari часто их игнорирует
+                });
             } catch (error) {
-                console.error('Error sharing:', error);
-                alert('Чтобы поделиться, скопируйте текст: ' + shareText);
+                console.error('Ошибка iOS share:', error);
+                alert('Скопируйте текст:\n\n' + shareText);
             }
         } else {
-            alert('Чтобы поделиться, скопируйте текст: ' + shareText);
+            alert('Скопируйте текст:\n\n' + shareText);
         }
+        return;
     }
+
+    // --- Все остальные платформы: обычный Web Share API с файлом ---
+    if (navigator.share) {
+        try {
+            const shareData = {
+                title: 'Мои путешествия по России',
+                text: shareText,
+                files: mapImage ? [
+                    new File([await fetch(mapImage).then(r => r.blob())], 'map.png', { type: 'image/png' })
+                ] : []
+            };
+            await navigator.share(shareData);
+        } catch (error) {
+            console.error('Ошибка share:', error);
+            alert('Скопируйте текст:\n\n' + shareText);
+        }
+    } else {
+        alert('Скопируйте текст:\n\n' + shareText);
+    }
+}
+
 
 
     // Инициализация приложения
