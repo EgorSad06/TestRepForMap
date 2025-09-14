@@ -578,8 +578,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     async function generateMapImageIOS() {
-        if (typeof domtoimage === 'undefined') {
-            console.error('dom-to-image not loaded');
+        if (typeof html2canvas === 'undefined') {
+            console.error('html2canvas not loaded');
             return null;
         }
     
@@ -592,92 +592,74 @@ document.addEventListener('DOMContentLoaded', function() {
         const svgWidth = 1300;
         const svgHeight = 1000;
     
-        // Клонируем SVG
+        // Клонируем SVG, делаем самодостаточным
         const clonedSvg = originalSvg.cloneNode(true);
         clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
     
-        // === 1) Встраиваем стили внутрь SVG ===
-        const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-        style.textContent = `
-            .region { fill: #b0b0b0; stroke: #fff; stroke-width: 0.5; }
-            .region.visited { fill: #81C784; }
-            .reserve { fill: #90caf9; stroke: #47a7f5; stroke-width: 1; }
-            .reserve.visited { fill: #66bb6a; }
-            .poi { fill: #ffb74d; stroke: #d84315; stroke-width: 1; }
-            .poi.visited { fill: #4caf50; stroke: #2e7d32; }
-        `;
-        clonedSvg.insertBefore(style, clonedSvg.firstChild);
-    
-        // Белый фон
+        // Фон
         const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bgRect.setAttribute('width', svgWidth);
         bgRect.setAttribute('height', svgHeight);
         bgRect.setAttribute('fill', 'white');
-        clonedSvg.insertBefore(bgRect, style.nextSibling);
+        clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
     
-        // === 2) Копируем вычисленные стили ===
+        // Копируем inline-стили
         const selectors = ['.region', '.reserve', '.attraction', '.poi'];
         selectors.forEach(sel => {
             originalSvg.querySelectorAll(sel).forEach(origEl => {
                 if (!origEl.id) return;
-                const clonedEl = clonedSvg.querySelector(`#${origEl.id}`);
-                if (!clonedEl) return;
+                const clone = clonedSvg.querySelector(`#${origEl.id}`);
+                if (!clone) return;
                 const cs = getComputedStyle(origEl);
-                clonedEl.setAttribute('fill', cs.fill);
-                clonedEl.setAttribute('stroke', cs.stroke);
-                clonedEl.setAttribute('stroke-width', cs.strokeWidth);
-                clonedEl.style.transition = 'none';
-                clonedEl.style.animation = 'none';
+                clone.setAttribute('fill', cs.fill);
+                clone.setAttribute('stroke', cs.stroke);
+                clone.setAttribute('stroke-width', cs.strokeWidth);
+                clone.style.transition = 'none';
+                clone.style.animation = 'none';
             });
         });
     
-        // Копируем класс visited
-        originalSvg.querySelectorAll('.visited').forEach(orig => {
-            const clone = clonedSvg.querySelector(`#${orig.id}`);
-            if (clone) clone.classList.add('visited');
-        });
-    
-        // Помещаем клон во временный контейнер
+        // Помещаем клон в DOM (чтобы html2canvas мог его "увидеть")
         const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.top = '-9999px';
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.left = '0';
+        tempContainer.style.top = '0';
         tempContainer.style.width = `${svgWidth}px`;
         tempContainer.style.height = `${svgHeight}px`;
+        tempContainer.style.backgroundColor = 'white';
+        tempContainer.style.zIndex = '9999';
+        tempContainer.style.opacity = '0'; // скрываем
         tempContainer.appendChild(clonedSvg);
         document.body.appendChild(tempContainer);
     
-        // Двойная задержка для Safari (гарантия, что все стили применились)
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        // Небольшая пауза для отрисовки
         await new Promise(r => setTimeout(r, 100));
     
         try {
-            console.log('iOS: trying to capture with domtoimage...');
-            const dataUrl = await domtoimage.toPng(tempContainer, {
-                width: svgWidth,
-                height: svgHeight,
+            console.log('iOS: capturing with html2canvas...');
+            const canvas = await html2canvas(tempContainer, {
                 backgroundColor: 'white',
-                cacheBust: true,
-                pixelRatio: 2
+                useCORS: true,
+                scale: 2 // Retina
             });
     
+            const dataUrl = canvas.toDataURL('image/png');
             document.body.removeChild(tempContainer);
     
-            // === 3) Проверка на пустую картинку ===
-            if (!dataUrl || dataUrl.length < 5000) { 
-                console.warn('⚠️ iOS generated very small/empty PNG');
+            if (!dataUrl || dataUrl.length < 5000) {
+                console.warn('⚠️ html2canvas вернул очень маленькое изображение');
             }
     
             return dataUrl;
         } catch (e) {
-            console.error('iOS capture error:', e);
+            console.error('html2canvas error:', e);
             document.body.removeChild(tempContainer);
             return null;
         }
     }
+    
     
     
 
