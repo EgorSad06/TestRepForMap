@@ -583,15 +583,18 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('html-to-image library is not loaded.');
             return null;
         }
-    
+        console.log('htmlToImage loaded:', typeof htmlToImage !== 'undefined');
+
         const originalSvg = document.querySelector('svg');
         if (!originalSvg) {
             console.error('SVG not found');
             return null;
         }
-    
+        console.log('Original SVG found:', !!originalSvg);
+
         // Клонируем SVG, чтобы не трогать оригинал
         const clonedSvg = originalSvg.cloneNode(true);
+        console.log('Cloned SVG created. outerHTML (first 200 chars):', clonedSvg.outerHTML.substring(0, 200));
         clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
     
@@ -625,6 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
         await new Promise(r => setTimeout(r, 300));
     
         try {
+            console.log('Attempting htmlToImage.toPng()');
             const dataUrl = await htmlToImage.toPng(tempContainer, {
                 width: svgWidth,
                 height: svgHeight,
