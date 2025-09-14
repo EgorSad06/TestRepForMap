@@ -641,7 +641,7 @@ clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
         document.body.appendChild(tempContainer);
     
         // Safari иногда рендерит с задержкой — подождём немного
-        await new Promise(r => setTimeout(r, 300));
+        
     
         try {
             const dataUrl = await htmlToImage.toPng(tempContainer, {
