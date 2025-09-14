@@ -438,157 +438,128 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // NEW: Функция для генерации изображения карты
-    async function generateMapImageDefault() {
-        const mapContainer = document.querySelector('.map-container'); // Или любой другой элемент, содержащий SVG
-        
-        // Убедимся, что domtoimage загружен
-        if (typeof domtoimage === 'undefined') {
-            console.error('dom-to-image library is not loaded.');
-            return null;
-        }
-
-        try {
-            // Клонируем SVG, чтобы применить временные стили без изменения DOM
-            const originalSvg = document.querySelector('svg');
-            const clonedSvg = originalSvg.cloneNode(true);
-
-            // --- Агрессивные сбросы стилей для изолированной генерации изображения ---
-            // Создаем временный контейнер для изолирования clonedSvg
-            const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'absolute';
-            tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
-            tempContainer.style.top = '-9999px';
-            tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
-            tempContainer.style.height = '1000px';
-            tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
-            document.body.appendChild(tempContainer);
-            tempContainer.appendChild(clonedSvg);
-
-            // Устанавливаем фиксированные размеры для clonedSvg, соответствующие viewBox
-            let svgWidth = 1300; // Из index.html
-            let svgHeight = 1000; // Из index.html
-
-            // Копируем viewBox с оригинального SVG, это критично для корректного отображения
-            const viewBoxAttr = originalSvg.getAttribute('viewBox');
-            let viewBoxX = 0;
-            let viewBoxY = 0;
-            let viewBoxWidth = svgWidth; // Use the fixed svgWidth/svgHeight as base
-            let viewBoxHeight = svgHeight;
-
-            if (viewBoxAttr) {
-                const originalViewBox = viewBoxAttr.split(' ').map(Number);
-                viewBoxX = originalViewBox[0];
-                viewBoxY = originalViewBox[1];
-                viewBoxWidth = originalViewBox[2];
-                viewBoxHeight = originalViewBox[3];
-            }
-
-            // Adjust viewBox to remove 300 pixels from the left
-            const cropLeft = 0;
-            viewBoxX += cropLeft;
-            viewBoxWidth -= cropLeft;
-
-            // Apply the adjusted viewBox to the cloned SVG
-            clonedSvg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
-
-            clonedSvg.setAttribute('width', svgWidth); // Keep clonedSvg's rendered width fixed for domtoimage
-            clonedSvg.setAttribute('height', svgHeight);
-
-            // Применяем агрессивные inline-стили к clonedSvg для полного сброса
-            clonedSvg.style.position = 'static';
-            clonedSvg.style.left = '0';
-            clonedSvg.style.top = '0';
-            clonedSvg.style.margin = '0';
-            clonedSvg.style.padding = '0';
-            clonedSvg.style.border = 'none';
-            clonedSvg.style.transform = 'none';
-            clonedSvg.style.overflow = 'visible';
-
-            // Create a background rectangle and prepend it to the cloned SVG
-            const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            backgroundRect.setAttribute('width', svgWidth);
-            backgroundRect.setAttribute('height', svgHeight);
-            backgroundRect.setAttribute('fill', 'white');
-            clonedSvg.prepend(backgroundRect);
-
-            // NEW: Копируем вычисленные стили для регионов, заповедников и достопримечательностей
-            const elementsToStyle = ['.region', '.reserve', '.attraction', '.poi'];
-            elementsToStyle.forEach(selector => {
-                originalSvg.querySelectorAll(selector).forEach(originalElement => {
-                    const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
-                    if (clonedElement) {
-                        const computedStyle = getComputedStyle(originalElement);
-                        // Копируем только основные SVG-свойства
-                        clonedElement.style.fill = computedStyle.fill;
-                        clonedElement.style.stroke = computedStyle.stroke;
-                        clonedElement.style.strokeWidth = computedStyle.strokeWidth;
-                        clonedElement.style.transition = 'none'; // Отключаем переходы для статического изображения
-                    }
-                });
-            });
-
-            // Копируем стили для посещенных элементов
-            const visitedElements = originalSvg.querySelectorAll('.visited');
-            visitedElements.forEach(originalElement => {
-                const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
-                if (clonedElement) {
-                    clonedElement.classList.add('visited'); // Добавляем класс, чтобы применились встроенные стили (если есть)
-                    // Также можно скопировать вычисленные стили для .visited классов
-                    const computedStyle = getComputedStyle(originalElement);
-                    clonedElement.style.fill = computedStyle.fill;
-                    clonedElement.style.stroke = computedStyle.stroke;
-                }
-            });
-
-            // Ensure mapInner is defined and accessible (it's a global variable)
-            const mapInnerClone = clonedSvg.querySelector('#map-inner');
-            if (mapInnerClone) {
-                // Reset the transform to ensure the screenshot is taken from a fixed (0,0) point at scale 1
-                mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
-            }
-
-            console.log('originalSvg outerHTML:', originalSvg.outerHTML);
-            console.log('clonedSvg outerHTML before domtoimage:', clonedSvg.outerHTML);
-            console.log('clonedSvg width:', clonedSvg.getAttribute('width'));
-            console.log('clonedSvg height:', clonedSvg.getAttribute('height'));
-            if (mapInnerClone) {
-                console.log('mapInnerClone transform:', mapInnerClone.getAttribute('transform'));
-                mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-
-
-// Проставляем inline-стили для всех регионов, заповедников и точек
-            const selectors = ['.region', '.reserve', '.attraction', '.poi'];
-            selectors.forEach(selector => {
-                originalSvg.querySelectorAll(selector).forEach(originalElement => {
-                    const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
-                    if (clonedElement) {
-                        const cs = getComputedStyle(originalElement);
-                        clonedElement.setAttribute('fill', cs.fill);
-                        clonedElement.setAttribute('stroke', cs.stroke);
-                        clonedElement.setAttribute('stroke-width', cs.strokeWidth);
-                    }
-                });
-            });
-
-
-            const dataUrl = await domtoimage.toPng(clonedSvg, {
-                width: svgWidth,
-                height: svgHeight,
-            });
-
-            // Очищаем временный контейнер
-            document.body.removeChild(tempContainer);
-
-            return dataUrl;
-        } catch (error) {
-            console.error('Ошибка при генерации изображения карты:', error);
-            return null;
-        }
+// Заменить старую функцию на эту
+async function generateMapImageDefault() {
+    // Проверка наличия dom-to-image
+    if (typeof domtoimage === 'undefined') {
+        console.error('dom-to-image library is not loaded.');
+        return null;
     }
+
+    const originalSvg = document.querySelector('svg');
+    if (!originalSvg) {
+        console.error('Original SVG not found');
+        return null;
+    }
+
+    try {
+        const clonedSvg = originalSvg.cloneNode(true);
+
+        // namespace (на всякий случай)
+        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+        // Размеры для вывода
+        const svgWidth = 1300;
+        const svgHeight = 1000;
+
+        // Копируем viewBox (если есть)
+        const viewBoxAttr = originalSvg.getAttribute('viewBox');
+        let viewBoxX = 0, viewBoxY = 0, viewBoxW = svgWidth, viewBoxH = svgHeight;
+        if (viewBoxAttr) {
+            const vb = viewBoxAttr.split(' ').map(Number);
+            if (vb.length === 4) {
+                viewBoxX = vb[0]; viewBoxY = vb[1]; viewBoxW = vb[2]; viewBoxH = vb[3];
+            }
+        }
+
+        clonedSvg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxW} ${viewBoxH}`);
+        clonedSvg.setAttribute('width', svgWidth);
+        clonedSvg.setAttribute('height', svgHeight);
+
+        // === ВСТАВЛЯЕМ БЕЛЫЙ ФОН ПЕРВЫМ ЭЛЕМЕНТОМ SVG ===
+        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bgRect.setAttribute('width', svgWidth);
+        bgRect.setAttribute('height', svgHeight);
+        bgRect.setAttribute('fill', 'white');
+        clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
+
+        // --- Скопируем вычисленные стили для важных селекторов ---
+        const selectors = ['.region', '.reserve', '.attraction', '.poi'];
+        selectors.forEach(selector => {
+            originalSvg.querySelectorAll(selector).forEach(originalElement => {
+                if (!originalElement.id) return; // легче искать по id
+                const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
+                if (!clonedElement) return;
+
+                // берем computed style и применяем как атрибуты SVG
+                const cs = window.getComputedStyle(originalElement);
+
+                // fill/stroke/width/opacity/linejoin/linecap
+                const fill = (cs.fill && cs.fill !== 'none') ? cs.fill : (originalElement.getAttribute('fill') || null);
+                if (fill) clonedElement.setAttribute('fill', fill);
+
+                const stroke = (cs.stroke && cs.stroke !== 'none') ? cs.stroke : originalElement.getAttribute('stroke');
+                if (stroke) clonedElement.setAttribute('stroke', stroke);
+
+                const strokeWidth = cs.strokeWidth || originalElement.getAttribute('stroke-width');
+                if (strokeWidth) clonedElement.setAttribute('stroke-width', strokeWidth);
+
+                if (cs.opacity && cs.opacity !== '1') clonedElement.setAttribute('opacity', cs.opacity);
+                if (cs.fillOpacity && cs.fillOpacity !== '1') clonedElement.setAttribute('fill-opacity', cs.fillOpacity);
+                if (cs.strokeOpacity && cs.strokeOpacity !== '1') clonedElement.setAttribute('stroke-opacity', cs.strokeOpacity);
+
+                // убрать переходы/анимации
+                clonedElement.style.transition = 'none';
+                clonedElement.style.animation = 'none';
+            });
+        });
+
+        // Копируем статус .visited (если нужны специальные стили)
+        originalSvg.querySelectorAll('.visited').forEach(orig => {
+            if (!orig.id) return;
+            const clone = clonedSvg.querySelector(`#${orig.id}`);
+            if (!clone) return;
+            clone.classList.add('visited');
+            // форсируем fill/stroke как у оригинала (на всякий случай)
+            const cs = window.getComputedStyle(orig);
+            if (cs.fill && cs.fill !== 'none') clone.setAttribute('fill', cs.fill);
+            if (cs.stroke && cs.stroke !== 'none') clone.setAttribute('stroke', cs.stroke);
+        });
+
+        // Поместим clone в временный контейнер (скрытый), чтобы браузер отрендерил его
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.width = `${svgWidth}px`;
+        tempContainer.style.height = `${svgHeight}px`;
+        tempContainer.appendChild(clonedSvg);
+        document.body.appendChild(tempContainer);
+
+        // Небольшая задержка, чтобы все стили и рендер успели примениться
+        await new Promise(r => setTimeout(r, 300));
+
+        // DEBUG (удали после проверки) — посмотри, действительно ли у clonedSvg есть атрибуты fill:
+        console.log('clonedSvg preview (first 400 chars):', clonedSvg.outerHTML.slice(0, 400));
+
+        // Рендерим в PNG
+        const dataUrl = await domtoimage.toPng(clonedSvg, {
+            width: svgWidth,
+            height: svgHeight,
+            cacheBust: true
+        });
+
+        // Убираем временный контейнер
+        document.body.removeChild(tempContainer);
+
+        return dataUrl;
+    } catch (error) {
+        console.error('Ошибка при генерации изображения карты (default):', error);
+        return null;
+    }
+}
+
     async function generateMapImageIOS() {
         // Убедимся, что html-to-image загружена
         if (typeof htmlToImage === 'undefined') {
