@@ -578,82 +578,69 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     async function generateMapImageIOS() {
-        // Убедимся, что dom-to-image загружена
         if (typeof domtoimage === 'undefined') {
-            console.error('dom-to-image library is not loaded.');
+            console.error('dom-to-image not loaded');
             return null;
         }
-        console.log('domtoimage loaded:', typeof domtoimage !== 'undefined');
-
+    
         const originalSvg = document.querySelector('svg');
         if (!originalSvg) {
             console.error('SVG not found');
             return null;
         }
-        console.log('Original SVG found:', !!originalSvg);
-
-        // Клонируем SVG, чтобы не трогать оригинал
-        const clonedSvg = originalSvg.cloneNode(true);
-        console.log('Cloned SVG created. outerHTML (first 200 chars):', clonedSvg.outerHTML.substring(0, 200));
-        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-
+    
         const svgWidth = 1300;
         const svgHeight = 1000;
+    
+        // Клонируем SVG
+        const clonedSvg = originalSvg.cloneNode(true);
+        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
-
-        // --- Скопируем вычисленные стили для важных селекторов ---
+    
+        // === 1) Встраиваем стили внутрь SVG ===
+        const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        style.textContent = `
+            .region { fill: #b0b0b0; stroke: #fff; stroke-width: 0.5; }
+            .region.visited { fill: #81C784; }
+            .reserve { fill: #90caf9; stroke: #47a7f5; stroke-width: 1; }
+            .reserve.visited { fill: #66bb6a; }
+            .poi { fill: #ffb74d; stroke: #d84315; stroke-width: 1; }
+            .poi.visited { fill: #4caf50; stroke: #2e7d32; }
+        `;
+        clonedSvg.insertBefore(style, clonedSvg.firstChild);
+    
+        // Белый фон
+        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bgRect.setAttribute('width', svgWidth);
+        bgRect.setAttribute('height', svgHeight);
+        bgRect.setAttribute('fill', 'white');
+        clonedSvg.insertBefore(bgRect, style.nextSibling);
+    
+        // === 2) Копируем вычисленные стили ===
         const selectors = ['.region', '.reserve', '.attraction', '.poi'];
-        selectors.forEach(selector => {
-            originalSvg.querySelectorAll(selector).forEach(originalElement => {
-                if (!originalElement.id) return; // легче искать по id
-                const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
-                if (!clonedElement) return;
-
-                // берем computed style и применяем как атрибуты SVG
-                const cs = window.getComputedStyle(originalElement);
-
-                // fill/stroke/width/opacity/linejoin/linecap
-                const fill = (cs.fill && cs.fill !== 'none') ? cs.fill : (originalElement.getAttribute('fill') || null);
-                if (fill) clonedElement.setAttribute('fill', fill);
-
-                const stroke = (cs.stroke && cs.stroke !== 'none') ? cs.stroke : originalElement.getAttribute('stroke');
-                if (stroke) clonedElement.setAttribute('stroke', stroke);
-
-                const strokeWidth = cs.strokeWidth || originalElement.getAttribute('stroke-width');
-                if (strokeWidth) clonedElement.setAttribute('stroke-width', strokeWidth);
-
-                if (cs.opacity && cs.opacity !== '1') clonedSvg.setAttribute('opacity', cs.opacity);
-                if (cs.fillOpacity && cs.fillOpacity !== '1') clonedSvg.setAttribute('fill-opacity', cs.fillOpacity);
-                if (cs.strokeOpacity && cs.strokeOpacity !== '1') clonedSvg.setAttribute('stroke-opacity', cs.strokeOpacity);
-
-                // убрать переходы/анимации
-                clonedElement.style.transition = 'none';
-                clonedElement.style.animation = 'none';
+        selectors.forEach(sel => {
+            originalSvg.querySelectorAll(sel).forEach(origEl => {
+                if (!origEl.id) return;
+                const clonedEl = clonedSvg.querySelector(`#${origEl.id}`);
+                if (!clonedEl) return;
+                const cs = getComputedStyle(origEl);
+                clonedEl.setAttribute('fill', cs.fill);
+                clonedEl.setAttribute('stroke', cs.stroke);
+                clonedEl.setAttribute('stroke-width', cs.strokeWidth);
+                clonedEl.style.transition = 'none';
+                clonedEl.style.animation = 'none';
             });
         });
-
-        // Копируем статус .visited (если нужны специальные стили)
+    
+        // Копируем класс visited
         originalSvg.querySelectorAll('.visited').forEach(orig => {
-            if (!orig.id) return;
             const clone = clonedSvg.querySelector(`#${orig.id}`);
-            if (!clone) return;
-            clone.classList.add('visited');
-            // форсируем fill/stroke как у оригинала (на всякий случай)
-            const cs = window.getComputedStyle(orig);
-            if (cs.fill && cs.fill !== 'none') clone.setAttribute('fill', cs.fill);
-            if (cs.stroke && cs.stroke !== 'none') clone.setAttribute('stroke', cs.stroke);
+            if (clone) clone.classList.add('visited');
         });
-
-        // Фон для Safari, иначе может быть прозрачность
-        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bg.setAttribute('width', svgWidth);
-        bg.setAttribute('height', svgHeight);
-        bg.setAttribute('fill', 'white');
-        clonedSvg.prepend(bg);
-
-        // Поместим clone в временный контейнер (скрытый), чтобы браузер отрендерил его
+    
+        // Помещаем клон во временный контейнер
         const tempContainer = document.createElement('div');
         tempContainer.style.position = 'absolute';
         tempContainer.style.left = '-9999px';
@@ -662,33 +649,36 @@ document.addEventListener('DOMContentLoaded', function() {
         tempContainer.style.height = `${svgHeight}px`;
         tempContainer.appendChild(clonedSvg);
         document.body.appendChild(tempContainer);
-
-        // Небольшая задержка, чтобы все стили и рендер успели примениться
-        await new Promise(r => setTimeout(r, 300));
-        
+    
+        // Двойная задержка для Safari (гарантия, что все стили применились)
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise(r => setTimeout(r, 100));
+    
         try {
-            console.log('Attempting domtoimage.toPng()');
-            const dataUrl = await domtoimage.toPng(tempContainer, { // Теперь захватываем tempContainer
+            console.log('iOS: trying to capture with domtoimage...');
+            const dataUrl = await domtoimage.toPng(tempContainer, {
                 width: svgWidth,
                 height: svgHeight,
                 backgroundColor: 'white',
                 cacheBust: true,
-                pixelRatio: 2 // даёт чётче картинку на Retina
+                pixelRatio: 2
             });
-
-            // Убираем временный контейнер
+    
             document.body.removeChild(tempContainer);
-
-            return dataUrl;
-        } catch (err) {
-            console.error('iOS capture error (caught, using domtoimage):', err);
-            // Убираем временный контейнер в случае ошибки
-            if (document.body.contains(tempContainer)) {
-                document.body.removeChild(tempContainer);
+    
+            // === 3) Проверка на пустую картинку ===
+            if (!dataUrl || dataUrl.length < 5000) { 
+                console.warn('⚠️ iOS generated very small/empty PNG');
             }
+    
+            return dataUrl;
+        } catch (e) {
+            console.error('iOS capture error:', e);
+            document.body.removeChild(tempContainer);
             return null;
         }
     }
+    
     
 
     // Функция для обработки кнопки "Поделиться"
