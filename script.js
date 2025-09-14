@@ -573,41 +573,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     async function generateMapImageIOS() {
+        // Убедимся, что html-to-image загружена
+        if (typeof htmlToImage === 'undefined') {
+            console.error('html-to-image library is not loaded.');
+            return null;
+        }
+    
         const originalSvg = document.querySelector('svg');
+        if (!originalSvg) {
+            console.error('SVG not found');
+            return null;
+        }
+    
+        // Клонируем SVG, чтобы не трогать оригинал
         const clonedSvg = originalSvg.cloneNode(true);
         clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-
+    
         const svgWidth = 1300;
         const svgHeight = 1000;
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
-
+    
+        // Фон для Safari, иначе может быть прозрачность
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('width', svgWidth);
         bg.setAttribute('height', svgHeight);
         bg.setAttribute('fill', 'white');
         clonedSvg.prepend(bg);
-
+    
+        // Создаём временный контейнер
         const tempContainer = document.createElement('div');
         tempContainer.style.position = 'fixed';
         tempContainer.style.top = '0';
         tempContainer.style.left = '0';
-        tempContainer.style.opacity = '0'; // прозрачный, но видимый для рендеринга
-        tempContainer.style.zIndex = '9999';
         tempContainer.style.width = `${svgWidth}px`;
         tempContainer.style.height = `${svgHeight}px`;
+        tempContainer.style.opacity = '0';
+        tempContainer.style.zIndex = '9999';
+        tempContainer.style.backgroundColor = 'white'; // ВАЖНО: для iOS
+    
         tempContainer.appendChild(clonedSvg);
         document.body.appendChild(tempContainer);
-
-        await new Promise(r => setTimeout(r, 300)); // Safari любит задержку
-
+    
+        // Safari иногда рендерит с задержкой — подождём немного
+        await new Promise(r => setTimeout(r, 300));
+    
         try {
-            const dataUrl = await domtoimage.toPng(tempContainer, {
+            const dataUrl = await htmlToImage.toPng(tempContainer, {
                 width: svgWidth,
                 height: svgHeight,
-                cacheBust: true
+                backgroundColor: 'white',
+                cacheBust: true,
+                pixelRatio: 2 // даёт чётче картинку на Retina
             });
+    
             document.body.removeChild(tempContainer);
             return dataUrl;
         } catch (err) {
@@ -616,6 +636,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
     }
+    
 
     // Функция для обработки кнопки "Поделиться"
     async function shareResults() {
