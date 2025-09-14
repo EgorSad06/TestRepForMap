@@ -603,6 +603,49 @@ document.addEventListener('DOMContentLoaded', function() {
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
     
+        // --- Скопируем вычисленные стили для важных селекторов ---
+        const selectors = ['.region', '.reserve', '.attraction', '.poi'];
+        selectors.forEach(selector => {
+            originalSvg.querySelectorAll(selector).forEach(originalElement => {
+                if (!originalElement.id) return; // легче искать по id
+                const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
+                if (!clonedElement) return;
+
+                // берем computed style и применяем как атрибуты SVG
+                const cs = window.getComputedStyle(originalElement);
+
+                // fill/stroke/width/opacity/linejoin/linecap
+                const fill = (cs.fill && cs.fill !== 'none') ? cs.fill : (originalElement.getAttribute('fill') || null);
+                if (fill) clonedElement.setAttribute('fill', fill);
+
+                const stroke = (cs.stroke && cs.stroke !== 'none') ? cs.stroke : originalElement.getAttribute('stroke');
+                if (stroke) clonedElement.setAttribute('stroke', stroke);
+
+                const strokeWidth = cs.strokeWidth || originalElement.getAttribute('stroke-width');
+                if (strokeWidth) clonedElement.setAttribute('stroke-width', strokeWidth);
+
+                if (cs.opacity && cs.opacity !== '1') clonedElement.setAttribute('opacity', cs.opacity);
+                if (cs.fillOpacity && cs.fillOpacity !== '1') clonedElement.setAttribute('fill-opacity', cs.fillOpacity);
+                if (cs.strokeOpacity && cs.strokeOpacity !== '1') clonedElement.setAttribute('stroke-opacity', cs.strokeOpacity);
+
+                // убрать переходы/анимации
+                clonedElement.style.transition = 'none';
+                clonedElement.style.animation = 'none';
+            });
+        });
+
+        // Копируем статус .visited (если нужны специальные стили)
+        originalSvg.querySelectorAll('.visited').forEach(orig => {
+            if (!orig.id) return;
+            const clone = clonedSvg.querySelector(`#${orig.id}`);
+            if (!clone) return;
+            clone.classList.add('visited');
+            // форсируем fill/stroke как у оригинала (на всякий случай)
+            const cs = window.getComputedStyle(orig);
+            if (cs.fill && cs.fill !== 'none') clone.setAttribute('fill', cs.fill);
+            if (cs.stroke && cs.stroke !== 'none') clone.setAttribute('stroke', cs.stroke);
+        });
+
         // Фон для Safari, иначе может быть прозрачность
         const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bg.setAttribute('width', svgWidth);
