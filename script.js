@@ -37,6 +37,8 @@ document.querySelectorAll('.region').forEach(region => {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Определение iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     // Элементы DOM
     const regions = document.querySelectorAll('.region');
     const progressModal = document.getElementById('progress-modal');
@@ -443,9 +445,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // --- Агрессивные сбросы стилей для изолированной генерации изображения ---
             // Создаем временный контейнер для изолирования clonedSvg
             const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'fixed';
-            tempContainer.style.left = '0px'; // Скрываем от глаз пользователя
-            tempContainer.style.top = '0px';
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px'; // Скрываем от глаз пользователя
+            tempContainer.style.top = '-9999px';
             tempContainer.style.width = '1600px'; // Задаем фиксированный размер контейнера
             tempContainer.style.height = '1000px';
             tempContainer.style.overflow = 'hidden'; // Чтобы clonedSvg не вылез за пределы
@@ -557,6 +559,50 @@ document.addEventListener('DOMContentLoaded', function() {
             return dataUrl;
         } catch (error) {
             console.error('Ошибка при генерации изображения карты:', error);
+            return null;
+        }
+    }
+    async function generateMapImageIOS() {
+        const originalSvg = document.querySelector('svg');
+        const clonedSvg = originalSvg.cloneNode(true);
+        clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+        const svgWidth = 1300;
+        const svgHeight = 1000;
+        clonedSvg.setAttribute('width', svgWidth);
+        clonedSvg.setAttribute('height', svgHeight);
+
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('width', svgWidth);
+        bg.setAttribute('height', svgHeight);
+        bg.setAttribute('fill', 'white');
+        clonedSvg.prepend(bg);
+
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.top = '0';
+        tempContainer.style.left = '0';
+        tempContainer.style.opacity = '0'; // прозрачный, но видимый для рендеринга
+        tempContainer.style.zIndex = '9999';
+        tempContainer.style.width = `${svgWidth}px`;
+        tempContainer.style.height = `${svgHeight}px`;
+        tempContainer.appendChild(clonedSvg);
+        document.body.appendChild(tempContainer);
+
+        await new Promise(r => setTimeout(r, 300)); // Safari любит задержку
+
+        try {
+            const dataUrl = await domtoimage.toPng(tempContainer, {
+                width: svgWidth,
+                height: svgHeight,
+                cacheBust: true
+            });
+            document.body.removeChild(tempContainer);
+            return dataUrl;
+        } catch (err) {
+            console.error('iOS capture error:', err);
+            document.body.removeChild(tempContainer);
             return null;
         }
     }
