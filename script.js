@@ -558,6 +558,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
             await new Promise(resolve => setTimeout(resolve, 300));
             
+
+
+// Проставляем inline-стили для всех регионов, заповедников и точек
+            const selectors = ['.region', '.reserve', '.attraction', '.poi'];
+            selectors.forEach(selector => {
+                originalSvg.querySelectorAll(selector).forEach(originalElement => {
+                    const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
+                    if (clonedElement) {
+                        const cs = getComputedStyle(originalElement);
+                        clonedElement.setAttribute('fill', cs.fill);
+                        clonedElement.setAttribute('stroke', cs.stroke);
+                        clonedElement.setAttribute('stroke-width', cs.strokeWidth);
+                    }
+                });
+            });
+
+
             const dataUrl = await domtoimage.toPng(clonedSvg, {
                 width: svgWidth,
                 height: svgHeight,
@@ -595,12 +612,19 @@ document.addEventListener('DOMContentLoaded', function() {
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
     
+
+        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bgRect.setAttribute('width', svgWidth);
+        bgRect.setAttribute('height', svgHeight);
+        bgRect.setAttribute('fill', 'white');
+// Вставляем как самый первый элемент, чтобы фон оказался под картой
+clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
         // Фон для Safari, иначе может быть прозрачность
-        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bg.setAttribute('width', svgWidth);
-        bg.setAttribute('height', svgHeight);
-        bg.setAttribute('fill', 'white');
-        clonedSvg.prepend(bg);
+        // const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        // bg.setAttribute('width', svgWidth);
+        // bg.setAttribute('height', svgHeight);
+        // bg.setAttribute('fill', 'white');
+        // clonedSvg.prepend(bg);
     
         // Создаём временный контейнер
         const tempContainer = document.createElement('div');
