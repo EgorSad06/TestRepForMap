@@ -37,7 +37,7 @@ document.querySelectorAll('.region').forEach(region => {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Определение iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isIOS = /iP(hone|od|ad)/.test(navigator.platform);
     // Элементы DOM
     const regions = document.querySelectorAll('.region');
     const progressModal = document.getElementById('progress-modal');
