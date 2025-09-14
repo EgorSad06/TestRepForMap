@@ -577,88 +577,155 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
     }
+
     async function generateMapImageIOS() {
-        if (typeof html2canvas === 'undefined') {
-            console.error('html2canvas not loaded');
-            return null;
-        }
-    
+    try {
         const originalSvg = document.querySelector('svg');
         if (!originalSvg) {
-            console.error('SVG not found');
+            console.error('generateMapImageIOS: SVG not found');
             return null;
         }
-    
-        const svgWidth = 1300;
-        const svgHeight = 1000;
-    
-        // Клонируем SVG, делаем самодостаточным
+
+        // Определяем целевой размер: предпочитаем viewBox, иначе bbox
+        let svgWidth = 1300, svgHeight = 1000;
+        const vb = originalSvg.getAttribute('viewBox');
+        if (vb) {
+            const parts = vb.trim().split(/\s+|,/).map(Number);
+            if (parts.length >= 4 && parts[2] > 0 && parts[3] > 0) {
+                svgWidth = parts[2];
+                svgHeight = parts[3];
+            }
+        } else {
+            const rect = originalSvg.getBoundingClientRect();
+            if (rect.width && rect.height) {
+                svgWidth = Math.round(rect.width);
+                svgHeight = Math.round(rect.height);
+            }
+        }
+
+        console.log('generateMapImageIOS: target size', svgWidth, 'x', svgHeight);
+
+        // Клонируем SVG и добавляем xmlns
         const clonedSvg = originalSvg.cloneNode(true);
         clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
-    
-        // Фон
+        if (!clonedSvg.getAttribute('viewBox') && vb) {
+            clonedSvg.setAttribute('viewBox', vb);
+        }
+
+        // Пробуем инлайнить computed styles: проходим по узлам оригинала и клона параллельно
+        const origNodes = originalSvg.querySelectorAll('*');
+        const cloneNodes = clonedSvg.querySelectorAll('*');
+        const len = Math.min(origNodes.length, cloneNodes.length);
+
+        for (let i = 0; i < len; i++) {
+            const o = origNodes[i];
+            const c = cloneNodes[i];
+            if (!o || !c) continue;
+
+            // копируем ключевые SVG-атрибуты (fill/stroke/stroke-width и др.)
+            try {
+                const cs = window.getComputedStyle(o);
+                // несколько часто важных SVG-свойств
+                const props = [
+                    'fill', 'stroke', 'stroke-width', 'opacity',
+                    'fill-opacity', 'stroke-opacity', 'stroke-linejoin',
+                    'stroke-linecap', 'font-family', 'font-size', 'font-weight',
+                    'text-anchor', 'vector-effect', 'shape-rendering', 'paint-order'
+                ];
+                props.forEach(p => {
+                    const v = cs.getPropertyValue(p);
+                    if (v && v !== 'initial' && v !== '') {
+                        // лучше поставить как атрибут (для SVG)
+                        try { c.setAttribute(p, v); } catch (e) { /* ignore */ }
+                    }
+                });
+
+                // дополнительно — инлайн-стиль (ограничиваем удалением animation/transition)
+                let styleString = '';
+                for (let j = 0; j < cs.length; j++) {
+                    const name = cs[j];
+                    if (name.indexOf('transition') !== -1 || name.indexOf('animation') !== -1) continue;
+                    const val = cs.getPropertyValue(name);
+                    if (!val) continue;
+                    // не клонируем user-select и т.п. которые не нужны
+                    if (name === '-webkit-tap-highlight-color') continue;
+                    styleString += `${name}:${val};`;
+                }
+                if (styleString) c.setAttribute('style', styleString);
+            } catch (err) {
+                // не критично
+            }
+        }
+
+        // Добавляем белый фон (важно для Safari)
         const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         bgRect.setAttribute('width', svgWidth);
         bgRect.setAttribute('height', svgHeight);
         bgRect.setAttribute('fill', 'white');
         clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
-    
-        // Копируем inline-стили
-        const selectors = ['.region', '.reserve', '.attraction', '.poi'];
-        selectors.forEach(sel => {
-            originalSvg.querySelectorAll(sel).forEach(origEl => {
-                if (!origEl.id) return;
-                const clone = clonedSvg.querySelector(`#${origEl.id}`);
-                if (!clone) return;
-                const cs = getComputedStyle(origEl);
-                clone.setAttribute('fill', cs.fill);
-                clone.setAttribute('stroke', cs.stroke);
-                clone.setAttribute('stroke-width', cs.strokeWidth);
-                clone.style.transition = 'none';
-                clone.style.animation = 'none';
-            });
+
+        // Сериализуем
+        const svgString = new XMLSerializer().serializeToString(clonedSvg);
+
+        // Создаём blob -> objectURL
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        // Рендерим в <img> -> canvas
+        const img = new Image();
+        // blob URL не требует crossOrigin, но на всякий случай:
+        img.crossOrigin = 'anonymous';
+
+        const pixelRatio = window.devicePixelRatio || 1;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(svgWidth * pixelRatio);
+        canvas.height = Math.round(svgHeight * pixelRatio);
+        canvas.style.width = svgWidth + 'px';
+        canvas.style.height = svgHeight + 'px';
+        const ctx = canvas.getContext('2d');
+
+        // Promise обёртка для загрузки изображения
+        const dataUrl = await new Promise((resolve) => {
+            img.onload = function () {
+                try {
+                    // заливаем белым (чтобы не было прозрачного фона)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    // рисуем картинку, масштабируем под пиксельный ratio
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    URL.revokeObjectURL(url);
+                    const out = canvas.toDataURL('image/png');
+                    resolve(out);
+                } catch (e) {
+                    console.error('generateMapImageIOS: drawImage/toDataURL failed', e);
+                    try { URL.revokeObjectURL(url); } catch (er) {}
+                    resolve(null);
+                }
+            };
+            img.onerror = function (err) {
+                console.error('generateMapImageIOS: img.onerror', err);
+                try { URL.revokeObjectURL(url); } catch (er) {}
+                resolve(null);
+            };
+            img.src = url;
         });
-    
-        // Помещаем клон в DOM (чтобы html2canvas мог его "увидеть")
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.left = '0';
-        tempContainer.style.top = '0';
-        tempContainer.style.width = `${svgWidth}px`;
-        tempContainer.style.height = `${svgHeight}px`;
-        tempContainer.style.backgroundColor = 'white';
-        tempContainer.style.zIndex = '9999';
-        tempContainer.style.opacity = '0'; // скрываем
-        tempContainer.appendChild(clonedSvg);
-        document.body.appendChild(tempContainer);
-    
-        // Небольшая пауза для отрисовки
-        await new Promise(r => setTimeout(r, 100));
-    
-        try {
-            console.log('iOS: capturing with html2canvas...');
-            const canvas = await html2canvas(tempContainer, {
-                backgroundColor: 'white',
-                useCORS: true,
-                scale: 2 // Retina
-            });
-    
-            const dataUrl = canvas.toDataURL('image/png');
-            document.body.removeChild(tempContainer);
-    
-            if (!dataUrl || dataUrl.length < 5000) {
-                console.warn('⚠️ html2canvas вернул очень маленькое изображение');
-            }
-    
-            return dataUrl;
-        } catch (e) {
-            console.error('html2canvas error:', e);
-            document.body.removeChild(tempContainer);
-            return null;
+
+        if (!dataUrl) {
+            console.warn('generateMapImageIOS: result is null (serialization -> img -> canvas failed)');
+        } else {
+            console.log('generateMapImageIOS: dataUrl length', dataUrl.length);
         }
+
+        return dataUrl;
+    } catch (err) {
+        console.error('generateMapImageIOS: unexpected error', err);
+        return null;
     }
+}
+
     
     
     
