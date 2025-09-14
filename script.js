@@ -653,12 +653,22 @@ document.addEventListener('DOMContentLoaded', function() {
         bg.setAttribute('fill', 'white');
         clonedSvg.prepend(bg);
 
-        // Небольшая задержка для рендеринга стилей (если нужна)
-        // await new Promise(r => setTimeout(r, 100)); 
+        // Поместим clone в временный контейнер (скрытый), чтобы браузер отрендерил его
+        const tempContainer = document.createElement('div');
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.width = `${svgWidth}px`;
+        tempContainer.style.height = `${svgHeight}px`;
+        tempContainer.appendChild(clonedSvg);
+        document.body.appendChild(tempContainer);
+
+        // Небольшая задержка, чтобы все стили и рендер успели примениться
+        await new Promise(r => setTimeout(r, 300));
         
         try {
             console.log('Attempting domtoimage.toPng()');
-            const dataUrl = await domtoimage.toPng(clonedSvg, {
+            const dataUrl = await domtoimage.toPng(tempContainer, { // Теперь захватываем tempContainer
                 width: svgWidth,
                 height: svgHeight,
                 backgroundColor: 'white',
@@ -666,9 +676,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 pixelRatio: 2 // даёт чётче картинку на Retina
             });
 
+            // Убираем временный контейнер
+            document.body.removeChild(tempContainer);
+
             return dataUrl;
         } catch (err) {
             console.error('iOS capture error (caught, using domtoimage):', err);
+            // Убираем временный контейнер в случае ошибки
+            if (document.body.contains(tempContainer)) {
+                document.body.removeChild(tempContainer);
+            }
             return null;
         }
     }
