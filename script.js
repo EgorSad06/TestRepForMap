@@ -586,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return null;
             }
     
-            // ✅ БЕРЁМ "идеальные" размеры как в generateMapImageDefault
+            // ✅ Берём "идеальные" размеры как в generateMapImageDefault
             const svgWidth = 1300;
             const svgHeight = 1000;
     
@@ -602,117 +602,109 @@ document.addEventListener('DOMContentLoaded', function() {
             clonedSvg.setAttribute('height', svgHeight);
             clonedSvg.setAttribute('viewBox', vb);
             clonedSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-        // Определяем целевой размер: предпочитаем viewBox, иначе bbox
-
-        console.log('generateMapImageIOS: target size', svgWidth, 'x', svgHeight);
-
-
-        // Пробуем инлайнить computed styles: проходим по узлам оригинала и клона параллельно
-        const origNodes = originalSvg.querySelectorAll('*');
-        const cloneNodes = clonedSvg.querySelectorAll('*');
-        const len = Math.min(origNodes.length, cloneNodes.length);
-
-        for (let i = 0; i < len; i++) {
-            const o = origNodes[i];
-            const c = cloneNodes[i];
-            if (!o || !c) continue;
-
-            // копируем ключевые SVG-атрибуты (fill/stroke/stroke-width и др.)
-            try {
-                const cs = window.getComputedStyle(o);
-                // несколько часто важных SVG-свойств
-                const props = [
-                    'fill', 'stroke', 'stroke-width', 'opacity',
-                    'fill-opacity', 'stroke-opacity', 'stroke-linejoin',
-                    'stroke-linecap', 'font-family', 'font-size', 'font-weight',
-                    'text-anchor', 'vector-effect', 'shape-rendering', 'paint-order'
-                ];
-                props.forEach(p => {
-                    const v = cs.getPropertyValue(p);
-                    if (v && v !== 'initial' && v !== '') {
-                        // лучше поставить как атрибут (для SVG)
-                        try { c.setAttribute(p, v); } catch (e) { /* ignore */ }
-                    }
-                });
-
-                // дополнительно — инлайн-стиль (ограничиваем удалением animation/transition)
-                let styleString = '';
-                for (let j = 0; j < cs.length; j++) {
-                    const name = cs[j];
-                    if (name.indexOf('transition') !== -1 || name.indexOf('animation') !== -1) continue;
-                    const val = cs.getPropertyValue(name);
-                    if (!val) continue;
-                    // не клонируем user-select и т.п. которые не нужны
-                    if (name === '-webkit-tap-highlight-color') continue;
-                    styleString += `${name}:${val};`;
-                }
-                if (styleString) c.setAttribute('style', styleString);
-            } catch (err) {
-                // не критично
+    
+            // ✅ Сбрасываем transform, чтобы карта всегда была в исходном положении
+            const mapInnerClone = clonedSvg.querySelector('#map-inner');
+            if (mapInnerClone) {
+                mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
             }
-        }
-
-        // Добавляем белый фон (важно для Safari)
-       
-        // Сериализуем
-        const svgString = new XMLSerializer().serializeToString(clonedSvg);
-
-        // Создаём blob -> objectURL
-        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-
-        // Рендерим в <img> -> canvas
-        const img = new Image();
-        // blob URL не требует crossOrigin, но на всякий случай:
-        img.crossOrigin = 'anonymous';
-
-        const pixelRatio = window.devicePixelRatio || 1;
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(svgWidth * pixelRatio);
-        canvas.height = Math.round(svgHeight * pixelRatio);
-        canvas.style.width = svgWidth + 'px';
-        canvas.style.height = svgHeight + 'px';
-        const ctx = canvas.getContext('2d');
-
-        // Promise обёртка для загрузки изображения
-        const dataUrl = await new Promise((resolve) => {
-            img.onload = function () {
+    
+            // Пробуем инлайнить computed styles: проходим по узлам оригинала и клона параллельно
+            const origNodes = originalSvg.querySelectorAll('*');
+            const cloneNodes = clonedSvg.querySelectorAll('*');
+            const len = Math.min(origNodes.length, cloneNodes.length);
+    
+            for (let i = 0; i < len; i++) {
+                const o = origNodes[i];
+                const c = cloneNodes[i];
+                if (!o || !c) continue;
+    
                 try {
-                    // заливаем белым (чтобы не было прозрачного фона)
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    // рисуем картинку, масштабируем под пиксельный ratio
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    URL.revokeObjectURL(url);
-                    const out = canvas.toDataURL('image/png');
-                    resolve(out);
-                } catch (e) {
-                    console.error('generateMapImageIOS: drawImage/toDataURL failed', e);
+                    const cs = window.getComputedStyle(o);
+                    const props = [
+                        'fill', 'stroke', 'stroke-width', 'opacity',
+                        'fill-opacity', 'stroke-opacity', 'stroke-linejoin',
+                        'stroke-linecap', 'font-family', 'font-size', 'font-weight',
+                        'text-anchor', 'vector-effect', 'shape-rendering', 'paint-order'
+                    ];
+                    props.forEach(p => {
+                        const v = cs.getPropertyValue(p);
+                        if (v && v !== 'initial' && v !== '') {
+                            try { c.setAttribute(p, v); } catch (e) { /* ignore */ }
+                        }
+                    });
+    
+                    let styleString = '';
+                    for (let j = 0; j < cs.length; j++) {
+                        const name = cs[j];
+                        if (name.indexOf('transition') !== -1 || name.indexOf('animation') !== -1) continue;
+                        if (name === '-webkit-tap-highlight-color') continue;
+                        const val = cs.getPropertyValue(name);
+                        if (!val) continue;
+                        styleString += `${name}:${val};`;
+                    }
+                    if (styleString) c.setAttribute('style', styleString);
+                } catch (err) {
+                    // не критично
+                }
+            }
+    
+            // Сериализуем
+            const svgString = new XMLSerializer().serializeToString(clonedSvg);
+    
+            // Создаём blob -> objectURL
+            const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+    
+            // Рендерим в <img> -> canvas
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+    
+            const pixelRatio = window.devicePixelRatio || 1;
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(svgWidth * pixelRatio);
+            canvas.height = Math.round(svgHeight * pixelRatio);
+            canvas.style.width = svgWidth + 'px';
+            canvas.style.height = svgHeight + 'px';
+            const ctx = canvas.getContext('2d');
+    
+            // Promise обёртка для загрузки изображения
+            const dataUrl = await new Promise((resolve) => {
+                img.onload = function () {
+                    try {
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        URL.revokeObjectURL(url);
+                        const out = canvas.toDataURL('image/png');
+                        resolve(out);
+                    } catch (e) {
+                        console.error('generateMapImageIOS: drawImage/toDataURL failed', e);
+                        try { URL.revokeObjectURL(url); } catch (er) {}
+                        resolve(null);
+                    }
+                };
+                img.onerror = function (err) {
+                    console.error('generateMapImageIOS: img.onerror', err);
                     try { URL.revokeObjectURL(url); } catch (er) {}
                     resolve(null);
-                }
-            };
-            img.onerror = function (err) {
-                console.error('generateMapImageIOS: img.onerror', err);
-                try { URL.revokeObjectURL(url); } catch (er) {}
-                resolve(null);
-            };
-            img.src = url;
-        });
-
-        if (!dataUrl) {
-            console.warn('generateMapImageIOS: result is null (serialization -> img -> canvas failed)');
-        } else {
-            console.log('generateMapImageIOS: dataUrl length', dataUrl.length);
+                };
+                img.src = url;
+            });
+    
+            if (!dataUrl) {
+                console.warn('generateMapImageIOS: result is null (serialization -> img -> canvas failed)');
+            } else {
+                console.log('generateMapImageIOS: dataUrl length', dataUrl.length);
+            }
+    
+            return dataUrl;
+        } catch (err) {
+            console.error('generateMapImageIOS: unexpected error', err);
+            return null;
         }
-
-        return dataUrl;
-    } catch (err) {
-        console.error('generateMapImageIOS: unexpected error', err);
-        return null;
     }
-}
+    
 
     
     
