@@ -4,6 +4,8 @@ let tooltipHovered = false; // Для отслеживания наведени�
 
 const isIOS = /iP(hone|od|ad)/.test(navigator.platform);
 
+console.log('Global isIOS:', isIOS);
+
 // Глобальные переменные для управления картой
 let scale = 1;
 let currentX = 0;
@@ -428,6 +430,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function generateMapImage() {
+        console.log('isIOS at generateMapImage:', isIOS);
+        console.log('navigator.platform at generateMapImage:', navigator.platform);
         if (isIOS) {
             console.log('iOS detected, using generateMapImageIOS()');
             return await generateMapImageIOS();
