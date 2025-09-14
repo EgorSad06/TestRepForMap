@@ -556,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+           // await new Promise(resolve => setTimeout(resolve, 300));
             
 
 
@@ -641,7 +641,7 @@ clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
         document.body.appendChild(tempContainer);
     
         // Safari иногда рендерит с задержкой — подождём немного
-        
+        await new Promise(r => setTimeout(r, 300));
     
         try {
             const dataUrl = await htmlToImage.toPng(tempContainer, {
