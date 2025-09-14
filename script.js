@@ -2,6 +2,8 @@ const tooltip = document.getElementById('tooltip');
 let hideTooltipTimeout; // Для задержки скрытия
 let tooltipHovered = false; // Для отслеживания наведения на саму подсказку
 
+const isIOS = /iP(hone|od|ad)/.test(navigator.platform);
+
 // Глобальные переменные для управления картой
 let scale = 1;
 let currentX = 0;
@@ -37,7 +39,6 @@ document.querySelectorAll('.region').forEach(region => {
 
 document.addEventListener('DOMContentLoaded', function() {
     // Определение iOS
-    const isIOS = /iP(hone|od|ad)/.test(navigator.platform);
     // Элементы DOM
     const regions = document.querySelectorAll('.region');
     const progressModal = document.getElementById('progress-modal');
