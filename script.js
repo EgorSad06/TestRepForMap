@@ -1,4 +1,3 @@
-
 const tooltip = document.getElementById('tooltip');
 let hideTooltipTimeout; // Для задержки скрытия
 let tooltipHovered = false; // Для отслеживания наведения на саму подсказку
@@ -556,25 +555,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 mapInnerClone.setAttribute('transform', `translate(0, 0) scale(1)`);
             }
 
-           // await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 300));
             
-
-
-// Проставляем inline-стили для всех регионов, заповедников и точек
-            const selectors = ['.region', '.reserve', '.attraction', '.poi'];
-            selectors.forEach(selector => {
-                originalSvg.querySelectorAll(selector).forEach(originalElement => {
-                    const clonedElement = clonedSvg.querySelector(`#${originalElement.id}`);
-                    if (clonedElement) {
-                        const cs = getComputedStyle(originalElement);
-                        clonedElement.setAttribute('fill', cs.fill);
-                        clonedElement.setAttribute('stroke', cs.stroke);
-                        clonedElement.setAttribute('stroke-width', cs.strokeWidth);
-                    }
-                });
-            });
-
-
             const dataUrl = await domtoimage.toPng(clonedSvg, {
                 width: svgWidth,
                 height: svgHeight,
@@ -612,19 +594,12 @@ document.addEventListener('DOMContentLoaded', function() {
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
     
-
-        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bgRect.setAttribute('width', svgWidth);
-        bgRect.setAttribute('height', svgHeight);
-        bgRect.setAttribute('fill', 'white');
-// Вставляем как самый первый элемент, чтобы фон оказался под картой
-clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
         // Фон для Safari, иначе может быть прозрачность
-        // const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        // bg.setAttribute('width', svgWidth);
-        // bg.setAttribute('height', svgHeight);
-        // bg.setAttribute('fill', 'white');
-        // clonedSvg.prepend(bg);
+        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        bg.setAttribute('width', svgWidth);
+        bg.setAttribute('height', svgHeight);
+        bg.setAttribute('fill', 'white');
+        clonedSvg.prepend(bg);
     
         // Создаём временный контейнер
         const tempContainer = document.createElement('div');
@@ -663,74 +638,51 @@ clonedSvg.insertBefore(bgRect, clonedSvg.firstChild);
     
 
     // Функция для обработки кнопки "Поделиться"
-  // Функция для обработки кнопки "Поделиться"
-async function shareResults() {
-    const regionPercentage = getVisitedRegionsPercentage();
-    const visitedRegionsCount = visitedRegions.length;
-
-    let shareText = 'Мои достижения на карте России:\n';
-    shareText += `Вы посетили регионов - ${visitedRegionsCount}. Это ${regionPercentage}% от всей страны!\n`;
-
-    const reservePercentage = getVisitedReservesPercentage();
-    if (reservePercentage > 0) shareText += `- Заповедники: ${reservePercentage}%\n`;
-
-    const attractionPercentage = getVisitedAttractionsPercentage();
-    if (attractionPercentage > 0) shareText += `- Достопримечательности: ${attractionPercentage}%\n`;
-
-    shareText += `Присоединяйтесь и исследуйте!\n`;
-    shareText += `Наш телеграм канал:\nhttps://t.me/BeenInRussia\n`;
-    shareText += `Отметить свои достижения:\nhttp://beeninrussia.ru/`;
-
-    // Генерация картинки
-    const mapImage = await generateMapImage();
-
-    // Определяем iOS
-    const isIOS = /iP(hone|od|ad)/.test(navigator.platform);
-
-    if (isIOS) {
-        // --- iOS: Открываем картинку в новой вкладке, шэрим только текст ---
-        if (mapImage) {
-            const imgWindow = window.open();
-            imgWindow.document.write(`<title>Карта моих путешествий</title><img src="${mapImage}" style="width:100%">`);
+    async function shareResults() {
+        const regionPercentage = getVisitedRegionsPercentage();
+        const visitedRegionsCount = visitedRegions.length;
+        const totalRegionsCount = regions.length;
+        let shareText = 'Мои достижения на карте России:\n';
+        shareText += `Вы посетили регионов - ${visitedRegionsCount}. Это ${regionPercentage}% от всей страны!\n`;
+        if (regionPercentage > 0) {
+            shareText += `- Регионы: ${regionPercentage}%\n`;
         }
+
+        const reservePercentage = getVisitedReservesPercentage();
+        if (reservePercentage > 0) {
+            shareText += `- Заповедники: ${reservePercentage}%\n`;
+        }
+
+        const attractionPercentage = getVisitedAttractionsPercentage();
+        if (attractionPercentage > 0) {
+            shareText += `- Достопримечательности: ${attractionPercentage}%\n`;
+        }
+
+        shareText += `Присоединяйтесь и исследуйте!\n`; // Removed the URL from here
+        shareText += `Наш телеграм канал:\nhttps://t.me/BeenInRussia\n`;
+        shareText += `Отметить свои достижения:\nhttp://beeninrussia.ru/`; // Removed the URL from here
+
+        const mapImage = await generateMapImage(); // Генерируем изображение карты
 
         if (navigator.share) {
             try {
-                await navigator.share({
+                const shareData = {
                     title: 'Мои путешествия по России',
-                    text: shareText
-                    // 👆 без files — Safari часто их игнорирует
-                });
+                    text: shareText,
+                    files: mapImage ? [new File([await fetch(mapImage).then(res => res.blob())], 'map.png', { type: 'image/png' })] : []
+                };
+                console.log('Sharing data:', shareData);
+                await navigator.share(shareData);
             } catch (error) {
-                console.error('Ошибка iOS share:', error);
-                alert('Скопируйте текст:\n\n' + shareText);
+                console.error('Error sharing:', error);
+                alert('Чтобы поделиться, скопируйте текст: ' + shareText);
             }
         } else {
-            alert('Скопируйте текст:\n\n' + shareText);
+            alert('Чтобы поделиться, скопируйте текст: ' + shareText);
         }
-        return;
-    }
 
-    // --- Все остальные платформы: обычный Web Share API с файлом ---
-    if (navigator.share) {
-        try {
-            const shareData = {
-                title: 'Мои путешествия по России',
-                text: shareText,
-                files: mapImage ? [
-                    new File([await fetch(mapImage).then(r => r.blob())], 'map.png', { type: 'image/png' })
-                ] : []
-            };
-            await navigator.share(shareData);
-        } catch (error) {
-            console.error('Ошибка share:', error);
-            alert('Скопируйте текст:\n\n' + shareText);
-        }
-    } else {
-        alert('Скопируйте текст:\n\n' + shareText);
+        
     }
-}
-
 
 
     // Инициализация приложения
