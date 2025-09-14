@@ -427,8 +427,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return ((visitedCount / totalAttractions) * 100).toFixed(0);
     }
 
-    // NEW: Функция для генерации изображения карты
     async function generateMapImage() {
+        if (isIOS) {
+            console.log('iOS detected, using generateMapImageIOS()');
+            return await generateMapImageIOS();
+        } else {
+            console.log('Not iOS, using default generateMapImage()');
+            return await generateMapImageDefault();
+        }
+    }
+
+    // NEW: Функция для генерации изображения карты
+    async function generateMapImageDefault() {
         const mapContainer = document.querySelector('.map-container'); // Или любой другой элемент, содержащий SVG
         
         // Убедимся, что domtoimage загружен
