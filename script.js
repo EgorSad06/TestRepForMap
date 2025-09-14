@@ -578,12 +578,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     async function generateMapImageIOS() {
-        // Убедимся, что html-to-image загружена
-        if (typeof htmlToImage === 'undefined') {
-            console.error('html-to-image library is not loaded.');
+        // Убедимся, что dom-to-image загружена
+        if (typeof domtoimage === 'undefined') {
+            console.error('dom-to-image library is not loaded.');
             return null;
         }
-        console.log('htmlToImage loaded:', typeof htmlToImage !== 'undefined');
+        console.log('domtoimage loaded:', typeof domtoimage !== 'undefined');
 
         const originalSvg = document.querySelector('svg');
         if (!originalSvg) {
@@ -597,12 +597,12 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Cloned SVG created. outerHTML (first 200 chars):', clonedSvg.outerHTML.substring(0, 200));
         clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
         clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-    
+
         const svgWidth = 1300;
         const svgHeight = 1000;
         clonedSvg.setAttribute('width', svgWidth);
         clonedSvg.setAttribute('height', svgHeight);
-    
+
         // --- Скопируем вычисленные стили для важных селекторов ---
         const selectors = ['.region', '.reserve', '.attraction', '.poi'];
         selectors.forEach(selector => {
@@ -624,9 +624,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const strokeWidth = cs.strokeWidth || originalElement.getAttribute('stroke-width');
                 if (strokeWidth) clonedElement.setAttribute('stroke-width', strokeWidth);
 
-                if (cs.opacity && cs.opacity !== '1') clonedElement.setAttribute('opacity', cs.opacity);
-                if (cs.fillOpacity && cs.fillOpacity !== '1') clonedElement.setAttribute('fill-opacity', cs.fillOpacity);
-                if (cs.strokeOpacity && cs.strokeOpacity !== '1') clonedElement.setAttribute('stroke-opacity', cs.strokeOpacity);
+                if (cs.opacity && cs.opacity !== '1') clonedSvg.setAttribute('opacity', cs.opacity);
+                if (cs.fillOpacity && cs.fillOpacity !== '1') clonedSvg.setAttribute('fill-opacity', cs.fillOpacity);
+                if (cs.strokeOpacity && cs.strokeOpacity !== '1') clonedSvg.setAttribute('stroke-opacity', cs.strokeOpacity);
 
                 // убрать переходы/анимации
                 clonedElement.style.transition = 'none';
@@ -652,39 +652,23 @@ document.addEventListener('DOMContentLoaded', function() {
         bg.setAttribute('height', svgHeight);
         bg.setAttribute('fill', 'white');
         clonedSvg.prepend(bg);
-    
-        // Создаём временный контейнер
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.top = '0';
-        tempContainer.style.left = '0';
-        tempContainer.style.width = `${svgWidth}px`;
-        tempContainer.style.height = `${svgHeight}px`;
-        tempContainer.style.opacity = '0';
-        tempContainer.style.zIndex = '9999';
-        tempContainer.style.backgroundColor = 'white'; // ВАЖНО: для iOS
-    
-        tempContainer.appendChild(clonedSvg);
-        document.body.appendChild(tempContainer);
-    
-        // Safari иногда рендерит с задержкой — подождём немного
-        await new Promise(r => setTimeout(r, 300));
-    
+
+        // Небольшая задержка для рендеринга стилей (если нужна)
+        // await new Promise(r => setTimeout(r, 100)); 
+        
         try {
-            console.log('Attempting htmlToImage.toPng()');
-            const dataUrl = await htmlToImage.toPng(tempContainer, {
+            console.log('Attempting domtoimage.toPng()');
+            const dataUrl = await domtoimage.toPng(clonedSvg, {
                 width: svgWidth,
                 height: svgHeight,
                 backgroundColor: 'white',
                 cacheBust: true,
                 pixelRatio: 2 // даёт чётче картинку на Retina
             });
-    
-            document.body.removeChild(tempContainer);
+
             return dataUrl;
         } catch (err) {
-            console.error('iOS capture error:', err);
-            document.body.removeChild(tempContainer);
+            console.error('iOS capture error (caught, using domtoimage):', err);
             return null;
         }
     }
