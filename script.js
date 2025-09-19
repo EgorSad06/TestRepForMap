@@ -765,53 +765,7 @@ window.open(vkUrl, '_blank');
 
 
     // Функция для обработки кнопки "Поделиться"
-    async function shareResults() {
-        const regionPercentage = getVisitedRegionsPercentage();
-        const visitedRegionsCount = visitedRegions.length;
-        const totalRegionsCount = regions.length;
-        let shareText = 'Мои достижения на карте России:\n';
-        shareText += `Вы посетили регионов - ${visitedRegionsCount}. Это ${regionPercentage}% от всей страны!\n`;
-        if (regionPercentage > 0) {
-            shareText += `- Регионы: ${regionPercentage}%\n`;
-        }
-
-        const reservePercentage = getVisitedReservesPercentage();
-        if (reservePercentage > 0) {
-            shareText += `- Заповедники: ${reservePercentage}%\n`;
-        }
-
-        const attractionPercentage = getVisitedAttractionsPercentage();
-        if (attractionPercentage > 0) {
-            shareText += `- Достопримечательности: ${attractionPercentage}%\n`;
-        }
-
-        shareText += `Присоединяйтесь и исследуйте!\n`; // Removed the URL from here
-        shareText += `Наш телеграм канал:\nhttps://t.me/BeenInRussia\n`;
-        shareText += `Отметить свои достижения:\nhttp://beeninrussia.ru/`; // Removed the URL from here
-
-        const mapImage = await generateMapImage(); // Генерируем изображение карты
-
-        if (navigator.share) {
-            try {
-                const shareData = {
-                    title: 'Мои путешествия по России',
-                    text: shareText,
-                    files: mapImage ? [new File([await fetch(mapImage).then(res => res.blob())], 'map.png', { type: 'image/png' })] : []
-                };
-                console.log('Sharing data:', shareData);
-                await navigator.share(shareData);
-            } catch (error) {
-                console.error('Error sharing:', error);
-                await copyToClipboard(shareText);
-                alert('Не удалось поделиться напрямую. Текст скопирован в буфер обмена. Пожалуйста, вставьте его в свою соцсеть (например, VK) и прикрепите изображение вручную, если оно не загрузилось.');
-            }
-        } else {
-            await copyToClipboard(shareText);
-            alert('Ваш браузер не поддерживает функцию "Поделиться". Текст скопирован в буфер обмена. Пожалуйста, вставьте его в свою соцсеть (например, VK) и сохраните изображение вручную, если необходимо.');
-        }
-
-        
-    }
+    shareResults
 
 
     // Инициализация приложения
