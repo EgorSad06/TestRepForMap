@@ -710,6 +710,33 @@ document.addEventListener('DOMContentLoaded', function() {
     
     
 
+    // NEW: Функция для копирования текста в буфер обмена
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            console.log('Text copied to clipboard');
+            // Можно добавить временное уведомление для пользователя, например, через всплывающее окно
+        } catch (err) {
+            console.error('Failed to copy text:', err);
+            // Fallback для старых браузеров или неразрешенных разрешений
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed'; // Избегаем прокрутки
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                console.log('Text copied to clipboard (fallback)');
+            } catch (err) {
+                console.error('Fallback: Could not copy text', err);
+            }
+            document.body.removeChild(textarea);
+        }
+    }
+
+
     // Функция для обработки кнопки "Поделиться"
     async function shareResults() {
         const regionPercentage = getVisitedRegionsPercentage();
@@ -748,10 +775,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 await navigator.share(shareData);
             } catch (error) {
                 console.error('Error sharing:', error);
-                alert('Чтобы поделиться, скопируйте текст: ' + shareText);
+                await copyToClipboard(shareText);
+                alert('Не удалось поделиться напрямую. Текст скопирован в буфер обмена. Пожалуйста, вставьте его в свою соцсеть и прикрепите изображение вручную, если оно не загрузилось.');
             }
         } else {
-            alert('Чтобы поделиться, скопируйте текст: ' + shareText);
+            await copyToClipboard(shareText);
+            alert('Ваш браузер не поддерживает функцию "Поделиться". Текст скопирован в буфер обмена. Пожалуйста, вставьте его в свою соцсеть и сохраните изображение вручную, если необходимо.');
         }
 
         
