@@ -348,6 +348,27 @@ document.addEventListener('DOMContentLoaded', function() {
         shareButton.addEventListener('click', shareResults);
     }
 
+    // NEW: Динамическое создание и добавление кнопки "Скачать карту"
+    const controlsContainer = document.querySelector('.controls');
+    if (controlsContainer && shareButton) {
+        const downloadMapBtn = document.createElement('button');
+        downloadMapBtn.id = 'download-map-btn';
+        downloadMapBtn.className = 'control-btn';
+        downloadMapBtn.innerHTML = '<i class="fas fa-download"></i><span>Скачать карту</span>';
+        
+        // Вставляем кнопку после кнопки "Поделиться"
+        shareButton.after(downloadMapBtn);
+
+        downloadMapBtn.addEventListener('click', async () => {
+            const mapImage = await generateMapImage();
+            if (mapImage) {
+                downloadImage(mapImage, 'map_russia_progress.png');
+            } else {
+                alert('Не удалось сгенерировать изображение карты для скачивания.');
+            }
+        });
+    }
+
     //переключение слоёв
     function switchLayer(layer) {
         currentLayer = layer;
@@ -710,6 +731,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     
 
+    // NEW: Функция для скачивания изображения
+    function downloadImage(dataUrl, filename) {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+
     // NEW: Функция для копирования текста в буфер обмена
     async function copyToClipboard(text) {
         try {
@@ -776,11 +808,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error('Error sharing:', error);
                 await copyToClipboard(shareText);
-                alert('Не удалось поделиться напрямую. Текст скопирован в буфер обмена. Пожалуйста, вставьте его в свою соцсеть и прикрепите изображение вручную, если оно не загрузилось.');
+                alert('Не удалось поделиться напрямую. Текст скопирован в буфер обмена. Вы можете вставить его в свою соцсеть. Для изображения воспользуйтесь кнопкой "Скачать карту".');
             }
         } else {
             await copyToClipboard(shareText);
-            alert('Ваш браузер не поддерживает функцию "Поделиться". Текст скопирован в буфер обмена. Пожалуйста, вставьте его в свою соцсеть и сохраните изображение вручную, если необходимо.');
+            alert('Ваш браузер не поддерживает функцию "Поделиться". Текст скопирован в буфер обмена. Вы можете вставить его в свою соцсеть. Для изображения воспользуйтесь кнопкой "Скачать карту".');
         }
 
         
