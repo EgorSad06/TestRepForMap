@@ -579,6 +579,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function generateMapImageIOS() {
+
+        const mapImage = await generateMapImage();
+
+if (navigator.share) {
+    try {
+        const supportsFiles = navigator.canShare && navigator.canShare({ files: [new File([], "test.png", { type: "image/png" })] });
+        if (supportsFiles) {
+            // Обычный Web Share API
+            const shareData = {
+                title: 'Мои путешествия по России',
+                text: shareText,
+                files: mapImage ? [new File([await fetch(mapImage).then(res => res.blob())], 'map.png', { type: 'image/png' })] : []
+            };
+            await navigator.share(shareData);
+            return;
+        }
+    } catch (e) {
+        console.warn("navigator.share без файлов не поддерживается:", e);
+    }
+}
+
+// --- ФОЛЛБЭК ДЛЯ VK ---
+const encodedText = encodeURIComponent(shareText);
+const vkUrl = `https://vk.com/share.php?url=${encodeURIComponent("http://beeninrussia.ru/")}&title=${encodeURIComponent("Мои путешествия по России")}&description=${encodedText}`;
+window.open(vkUrl, '_blank');
+
+
         try {
             const originalSvg = document.querySelector('svg');
             if (!originalSvg) {
